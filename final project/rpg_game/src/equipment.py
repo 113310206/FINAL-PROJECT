@@ -8,7 +8,7 @@ class Equipment:
         self.level = level
 
     def equip(self, character):
-        # å‹•æ…‹åŒ¯å…¥é¿å…å¾ªç’°ä¾è³´
+        # °ÊºA¶×¤JÁ×§K´`Àô¨Ì¿à
         if not hasattr(character, "name"):
             print("Invalid character type.")
             return
@@ -18,7 +18,7 @@ class Equipment:
         print(f"{character.name} equipped {self.name} (Lv.{self.level})!")
 
     def unequip(self, character):
-        # å‹•æ…‹åŒ¯å…¥é¿å…å¾ªç’°ä¾è³´
+        # °ÊºA¶×¤JÁ×§K´`Àô¨Ì¿à
         if not hasattr(character, "name"):
             print("Invalid character type.")
             return
@@ -29,10 +29,10 @@ class Equipment:
 
 class EquipmentType:
     def __init__(self, name, eq_type, stat_bonus, level=1):
-        self.name = name  # è£å‚™åç¨±
-        self.eq_type = eq_type  # è£å‚™é¡å‹ ('weapon', 'armor', 'accessory')
-        self.stat_bonus = stat_bonus  # å±¬æ€§åŠ æˆ
-        self.level = level  # è£å‚™ç­‰ç´š
+        self.name = name  # ¸Ë³Æ¦WºÙ
+        self.eq_type = eq_type  # ¸Ë³ÆÃş«¬ ('weapon', 'armor', 'accessory')
+        self.stat_bonus = stat_bonus  # Äİ©Ê¥[¦¨
+        self.level = level  # ¸Ë³Æµ¥¯Å
 
     def create_equipment(self):
         return Equipment(self.name, self.eq_type, self.stat_bonus, self.level)

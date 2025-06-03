@@ -7,6 +7,7 @@ from rpg_game.src.team import Team
 from rpg_game.src.display import DisplaySystem
 from rpg_game.src.store import store
 from rpg_game.src.backpack import Backpack
+from rpg_game.src.UpgradeSystem import UpgradeSystem
 import random
 import time
 
