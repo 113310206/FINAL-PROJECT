@@ -49,7 +49,7 @@ class excalibur(EquipmentType):
 
 class thors_hammer(EquipmentType):
     def __init__(self, level=1):
-        super().__init__("槌子", "weapon", {"str": 7, "atk": 15}, level)
+        super().__init__("Thor's Hammer", "weapon", {"str": 7, "atk": 15}, level)
         self.special_effect = "Chance to stun the target"
 
     def use_special_effect(self, target):
