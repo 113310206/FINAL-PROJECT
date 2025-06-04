@@ -6,22 +6,19 @@ from rpg_game.src.skill import Skill, ElementalSkill, SupportElementalSkill
 from rpg_game.src.team import Team
 from rpg_game.src.display import DisplaySystem
 from rpg_game.src.store import store
-from rpg_game.src.backpack import Backpack
-from rpg_game.src.UpgradeSystem import UpgradeSystem
+from rpg_game.src.backpack import Backpack, backpack_menu
+from rpg_game.src.UpgradeSystem import UpgradeSystem, upgrade_menu
 import random
 import time
 
-class SkillTree:
-    def __init__(self, skills):
-        self.skills = skills  # list of Skill/ElementalSkill
-        self.levels = {s.name: 1 for s in skills}
-
-    def upgrade(self, skill_name):
-        if skill_name in self.levels:
-            self.levels[skill_name] += 1
-            print(f"{skill_name} 升級到等級 {self.levels[skill_name]}！")
-        else:
-            print("技能不存在。")
+# 全局定義屬性映射字典
+attribute_mapping = {
+    "str": "str",
+    "vit": "vit",
+    "agl": "agl",
+    "dex": "dex",
+    "intel": "intel"
+}
 
 class Monster:
     def __init__(self, hp, attack, element=None, skills=None, behavior=None):
@@ -29,8 +26,8 @@ class Monster:
         self.attack = attack
         self.element = element
         self.skills = skills or []
-        self.behavior = behavior or "normal"  # e.g. "berserk", "heal", etc.
-        self.name = "怪物"  # 修正：補上 name 屬性，避免角色攻擊時出錯
+        self.behavior = behavior or "normal"
+        self.name = "怪物"
         self.job = type("Job", (), {"job_name": "怪物"})()  # 讓 monster 有 job 屬性且 job_name 為"怪物"
 
     def print(self):
@@ -174,7 +171,7 @@ def get_valid_choice():
 
 def team_menu(team):
     while True:
-        DisplaySystem.show_team_menu()  # 顯示 Team Management 功能
+        DisplaySystem.show_team_menu()  # 顯示 Team Management 選單
         choice = input("Choose an option: ").strip()
         if choice == "1":  # View Team
             DisplaySystem.show_team(team, pause=True)
@@ -202,7 +199,7 @@ def team_menu(team):
                 print(f"Error: {e}")
             input("（按 Enter 繼續）")
         elif choice == "5":  # Add Member
-            if not team.backpack.items:  # 確保背包中有物品
+            if not team.backpack.items:
                 print("The backpack is empty. No members available to add.")
                 input("（按 Enter 繼續）")
                 continue
@@ -211,11 +208,11 @@ def team_menu(team):
                 item_idx = int(input("Enter the item number to add as a member: ")) - 1
                 item_name = list(team.backpack.items.keys())[item_idx]
                 character = team.backpack.items[item_name]['item']
-                if not isinstance(character, Character):  # 確保物品是角色類型
+                if not isinstance(character, Character):
                     print("Selected item is not a character.")
                     continue
                 team.add_member(character)
-                team.backpack.remove_item(item_name, 1)  # 從背包移除角色
+                team.backpack.remove_item(item_name, 1)
             except Exception as e:
                 print(f"Error: {e}")
             input("（按 Enter 繼續）")
@@ -224,52 +221,6 @@ def team_menu(team):
         else:
             print("Invalid choice. Please enter a number between 1 and 6.")
             input("（按 Enter 繼續）")
-
-def backpack_menu(team):
-    # 確保 team.backpack 已初始化一次
-    if not hasattr(team, 'backpack') or not isinstance(team.backpack, Backpack):
-        team.backpack = Backpack()
-        print("背包已初始化。")
-    
-    while True:
-        DisplaySystem.clear_screen()
-        print("\n背包選擇：")
-        print("1. 查看背包")
-        print("2. 裝備物品")
-        print("3. 返回主選單")
-        choice = input("選擇操作: ").strip()
-        if choice == "1":
-            DisplaySystem.show_backpack(team.backpack)
-        elif choice == "2":
-            try:
-                DisplaySystem.show_backpack(team.backpack)
-                item_idx = int(input("輸入物品編號: ")) - 1
-                if 0 <= item_idx < len(team.backpack.items):
-                    item_name = list(team.backpack.items.keys())[item_idx]
-                    equipment = team.backpack.items[item_name]['item']  # 獲取物品實例
-                    if not isinstance(equipment, Equipment):  # 確保物品是 Equipment 類型
-                        print("選擇的物品不是裝備。\n")
-                        continue
-                    print("選擇角色進行裝備：")
-                    for idx, member in enumerate(team.members):
-                        print(f"{idx + 1}. {member.name}")
-                    member_idx = int(input("輸入角色編號: ")) - 1
-                    if 0 <= member_idx < len(team.members):
-                        member = team.members[member_idx]
-                        member.equip(equipment)
-                        team.backpack.remove_item(item_name, 1)  # 從背包移除已裝備的物品
-                        print(f"{member.name} 裝備了 {equipment.name}！")
-                    else:
-                        print("無效的角色選擇。\n")
-                else:
-                    print("無效的物品選擇。\n")
-            except ValueError:
-                print("輸入錯誤，請輸入有效的編號。\n")
-        elif choice == "3":
-            break
-        else:
-            print("無效的選擇，請輸入 1, 2 或 3。\n")
-
 
 class Battle:
     def __init__(self, team, monster):
@@ -288,7 +239,14 @@ class Battle:
                     # 每個角色行動前都顯示隊伍與怪物狀態
                     DisplaySystem.show_battle_status(self.team, self.monster)
                     print(f"\nIt's {member.name}'s turn.")
-                    print("1. Normal Attack\n2. Use Skill\n3. Use Element Skill\n4. Use Element Skill on Teammate\n5. Upgrade Skill\n6. Equip/Unequip\n7. View Backpack\n8. Skip Turn")
+                    print("1. Normal Attack\n2. Use Skill" 
+                          "\n3. Use Element Skill   " 
+                          "\n4. Use Element Skill on Teammate   " 
+                          "\n5. Upgrade Skill       " 
+                          "\n6. Equip/Unequip" 
+                          "\n7. View Backpack "
+                          "\n8. Upgrade Syetem " 
+                          "\n9. Skip Turn")
                     action = int(input("Choose an action: "))
 
                     if action == 1:
@@ -353,7 +311,7 @@ class Battle:
                             print("輸入錯誤，請輸入有效的編號。\n")  # 修正顯示邏輯錯誤
                         break  # 結束循環，消耗回合
                     elif action == 5:
-                        member.upgrade_skill()
+                        upgrade_menu(team)  # 使用升級系統
                         continue  # 不消耗回合，保持角色動作
                     elif action == 6:
                         if not team.backpack.items:  # 確保背包中有物品
@@ -383,6 +341,8 @@ class Battle:
                         DisplaySystem.show_backpack(team.backpack)
                         continue  # 不消耗回合，保持角色動作
                     elif action == 8:
+                        upgrade_menu(team)
+                    elif action == 9:
                         print(f"{member.name} skipped their turn.\n")
                         break  # 結束循環，消耗回合
                     else:
@@ -442,12 +402,14 @@ if __name__ == "__main__":
         elif choice == "4":
             team_menu(team)
         elif choice == "5":
-            backpack_menu(team)
+            backpack_menu(team)  # 改為從 Backpack 模組中調用
         elif choice == "6":
+            upgrade_menu(team)
+        elif choice == "7":
             print("Exiting game. Goodbye!")
             break
         else:
-            print("Invalid choice. Please enter a number between 1 and 6.")
-            time.sleep(1)
+            print("Invalid choice. Please enter a number between 1 and 7.")
+            input("（按 Enter 繼續）")
 
 

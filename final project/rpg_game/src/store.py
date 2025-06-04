@@ -19,35 +19,35 @@ def store(team):
             print("Exiting store...\n")
             input("（按 Enter 繼續）")  # 暫停
             break
-        if choice in [1, 2, 3, 4, 5] and team.coin < 50:
-            print("Not enough coins.\n")
-            input("（按 Enter 繼續）")  # 暫停
-            continue
-        if choice == 1:
-            team.spend_coin(50)
-            print("STR item purchased and added to the backpack.\n")
-            team.backpack.add_item("STR Item", 1)
-            input("（按 Enter 繼續）")  # 暫停
-        elif choice == 2:
-            team.spend_coin(50)
-            print("VIT item purchased and added to the backpack.\n")
-            team.backpack.add_item("VIT Item", 1)
-            input("（按 Enter 繼續）")  # 暫停
-        elif choice == 3:
-            team.spend_coin(50)
-            print("AGL item purchased and added to the backpack.\n")
-            team.backpack.add_item("AGL Item", 1)
-            input("（按 Enter 繼續）")  # 暫停
-        elif choice == 4:
-            team.spend_coin(50)
-            print("DEX item purchased and added to the backpack.\n")
-            team.backpack.add_item("DEX Item", 1)
-            input("（按 Enter 繼續）")  # 暫停
-        elif choice == 5:
-            team.spend_coin(50)
-            print("INT item purchased and added to the backpack.\n")
-            team.backpack.add_item("INT Item", 1)
-            input("（按 Enter 繼續）")  # 暫停
+        if choice in [1, 2, 3, 4, 5]:
+            if team.coin < 50:
+                print("Not enough coins.\n")
+                input("（按 Enter 繼續）")  # 暫停
+                continue
+            attribute_map = {
+                1: "STR",
+                2: "VIT",
+                3: "AGL",
+                4: "DEX",
+                5: "INT"
+            }
+            attribute_name = attribute_map[choice]
+            # 選擇要加點的角色
+            print("Select a member to apply the attribute point:")
+            for idx, member in enumerate(team.members):
+                print(f"{idx + 1}. {member.name}")
+            m_idx = int(input("輸入角色編號: ")) - 1
+            if 0 <= m_idx < len(team.members):
+                member = team.members[m_idx]
+                team.spend_coin(50)
+                # 屬性欄位在角色中以小寫呈現，例如 member.str
+                current_value = getattr(member, attribute_name.lower())
+                setattr(member, attribute_name.lower(), current_value + 1)
+                print(f"{member.name}'s {attribute_name} increased by 1!")
+                input("（按 Enter 繼續）")  # 暫停
+            else:
+                print("Invalid member selection.\n")
+                input("（按 Enter 繼續）")
         elif choice == 7:  # Gacha Draw
             if team.coin < 200:
                 print("Not enough coins for gacha.\n")

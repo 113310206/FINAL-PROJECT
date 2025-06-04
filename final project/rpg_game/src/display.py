@@ -110,7 +110,8 @@ class DisplaySystem:
         print("3. Store")
         print("4. Team Management")
         print("5. Backpack")
-        print("6. Exit Game")
+        print("6. Upgrade Character/Equipment")
+        print("7. Exit Game")
     
     @staticmethod
     def show_battle_status(team, monster, pause=False):
@@ -195,3 +196,22 @@ class DisplaySystem:
         print("5. Add Member")
         print("6. Return to Main Menu")
         print("========================")
+    
+    @staticmethod
+    def show_upgrade_menu():
+        DisplaySystem.clear_screen()
+        print("\n=== 升級選單 ===")
+        print("1. 升級角色等級")
+        print("2. 提升角色屬性")
+        print("3. 升級裝備")
+        print("4. 返回主選單")
+        print("================")
+    
+    @staticmethod
+    def show_backpack_menu(team):
+        DisplaySystem.clear_screen()
+        print("\n=== Backpack Menu ===")
+        print("1. 查看背包")
+        print("2. 使用物品")
+        print("3. 返回主選單")
+        print("======================")
