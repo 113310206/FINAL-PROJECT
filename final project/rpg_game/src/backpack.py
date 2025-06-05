@@ -73,16 +73,22 @@ def backpack_menu(team):
                 # 顯示背包內容並列出物品編號
                 DisplaySystem.clear_screen()
                 print("\n=== Backpack Items ===")
-                for idx, (item_name, item_info) in enumerate(team.backpack.items.items()):
-                    print(f"{idx + 1}. {item_name}: {item_info}")
+                for idx, (item_name, item_info) in enumerate(team.backpack.items.items(), start=1):
+                    item_type = "Character" if isinstance(item_info['item'], Character) else "Equipment" if isinstance(item_info['item'], Equipment) else "Other"
+                    print(f"{idx}. {item_name} ({item_type}) - Quantity: {item_info['quantity']}")
                 print("======================")
                 item_idx = int(input("輸入物品編號: ")) - 1
                 if 0 <= item_idx < len(team.backpack.items):
                     item_name = list(team.backpack.items.keys())[item_idx]
                     item = team.backpack.items[item_name]['item']
                     print(f"\n你選擇的物品：{item_name}")
-                    print(f"物品內容：{item}")
-                    upgrade_menu(team)
+                    if isinstance(item, Character):
+                        upgrade_menu(team)
+                    elif isinstance(item, Equipment):
+                        upgrade_menu(team)
+                    else:
+                        print(f"{item_name} 是其他類型物品，請確認其用途。\n")
+                    input("（按 Enter 繼續）")
                 else:
                     print("無效的物品選擇。\n")
                     input("（按 Enter 繼續）")

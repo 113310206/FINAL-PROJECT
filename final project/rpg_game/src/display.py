@@ -1,5 +1,7 @@
 import os
 import time
+from rpg_game.src.character import Character  # 確保匯入 Character 類型
+from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
 
 class DisplaySystem:
     @staticmethod
@@ -50,7 +52,13 @@ class DisplaySystem:
         if crit:
             message += " [Critical Hit!]"
         if element_boost:
-            message += " [Element Boost!]"
+            if attacker.element and target.element:
+                if attacker.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif attacker.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif attacker.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
         if skill_boost:
             message += " [Skill Boost!]"
         print(message)
@@ -66,7 +74,13 @@ class DisplaySystem:
         if crit:
             message += " [Critical Hit!]"
         if element_boost:
-            message += " [Element Boost!]"
+            if monster.element and target.element:
+                if monster.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif monster.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif monster.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
         print(message)
         input("（按 Enter 繼續）")
 
@@ -92,7 +106,15 @@ class DisplaySystem:
         if crit:
             message += " [Critical Hit!]"
         if element_boost:
-            message += " [Element Boost!]"
+            if user.element and target.element:
+                if user.element == target.element:
+                    message += " [Element Synergy: Same Element!]"
+                elif user.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif user.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif user.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
         print(message)
         if skill.element:
             print(f"{target.name} is now affected by {skill.element} element.")
@@ -143,33 +165,26 @@ class DisplaySystem:
             print(f"{skill.name} (Cost: {skill.cost}, Damage: {skill.damage}) - {skill.desc}")
         print("===================")
         input("（按 Enter 繼續）")
-
-    @staticmethod
-    def store(team):
-        DisplaySystem.clear_screen()
-        print("=== Store ===")
-        print("1. Increase STR (50 coins)")
-        print("2. Increase VIT (50 coins)")
-        print("3. Increase AGL (50 coins)")
-        print("4. Increase DEX (50 coins)")
-        print("5. Increase INT (50 coins)")
-        print("6. Exit Store")
-        print("7. Buy Random Equipment (100 coins)")
-        print("8. Gacha Draw (200 coins)")
-        print(f"Current Coins: {team.coin}")
-        print("================")
     
     @staticmethod
-    def show_backpack(backpack):
+    def show_backpack(backpack, pause=True):
         DisplaySystem.clear_screen()
         print("\n=== Backpack ===")
         if not backpack.items:
             print("The backpack is empty.")
+            print("================\n")
+            if pause:
+                input("（按 Enter 返回選單）")  # 按下 Enter 返回選單
+            return
         else:
-            for item, quantity in backpack.items.items():
-                print(f"{item}: {quantity}")
+            for idx, (item_name, data) in enumerate(backpack.items.items(), start=1):
+                item = data['item']
+                quantity = data['quantity']
+                item_type = "Character" if isinstance(item, Character) else "Equipment" if isinstance(item, Equipment) else "Other"
+                print(f"{idx}. {item_name} ({item_type}) - Quantity: {quantity}")
         print("================\n")
-        input("（按 Enter 繼續）")  # 暫停，等待使用者按下 Enter
+        if pause:
+            input("（按 Enter 繼續）")  # 暫停，等待使用者按下 Enter
 
     @staticmethod
     def show_store_menu(team):

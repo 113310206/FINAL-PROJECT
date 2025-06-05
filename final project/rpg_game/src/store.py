@@ -13,11 +13,15 @@ def store(team):
     
     while True:
         DisplaySystem.show_store_menu(team)  # 使用 DisplaySystem 顯示商店功能
-        choice = int(input("Choose an option: "))
+        try:
+            choice = int(input("Choose an option: "))
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+            input("（按 Enter 繼續）")  # 暫停
+            continue
+
         DisplaySystem.clear_screen()  # 清除螢幕，避免訊息被刷掉
         if choice == 6:
-            print("Exiting store...\n")
-            input("（按 Enter 繼續）")  # 暫停
             break
         if choice in [1, 2, 3, 4, 5]:
             if team.coin < 50:
@@ -36,7 +40,12 @@ def store(team):
             print("Select a member to apply the attribute point:")
             for idx, member in enumerate(team.members):
                 print(f"{idx + 1}. {member.name}")
-            m_idx = int(input("輸入角色編號: ")) - 1
+            try:
+                m_idx = int(input("輸入角色編號: ")) - 1
+            except ValueError:
+                print("Invalid input. Please enter a valid number.")
+                input("（按 Enter 繼續）")
+                continue
             if 0 <= m_idx < len(team.members):
                 member = team.members[m_idx]
                 team.spend_coin(50)
@@ -64,11 +73,12 @@ def store(team):
                 print(f"Gacha success! {gacha_equipment.name} has been added to the backpack!\n")
             else:
                 print("Invalid pool choice.\n")
+                input("（按 Enter 繼續）")
                 continue
             team.spend_coin(200)
             input("（按 Enter 繼續）")  # 暫停
         else:
-            print("Invalid choice.\n")
+            print("Invalid choice. Please enter a valid option.\n")
             input("（按 Enter 繼續）")  # 暫停
 
 def gacha_draw_character():
