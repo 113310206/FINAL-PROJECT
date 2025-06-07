@@ -2,6 +2,8 @@ import os
 import time
 from rpg_game.src.character import Character  # 確保匯入 Character 類型
 from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
+from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
+from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment  # 確保匯入 gacha 函數
 
 class DisplaySystem:
     @staticmethod
@@ -230,3 +232,190 @@ class DisplaySystem:
         print("2. 使用物品")
         print("3. 返回主選單")
         print("======================")
+
+    @staticmethod
+    def team_menu(team):
+        from rpg_game.src.display import DisplaySystem  # 確保顯示功能可用
+        from rpg_game.src.character import Character  # 確保匯入 Character 類型
+        while True:
+            DisplaySystem.show_team_menu()  # 顯示 Team Management 選單
+            choice = input("Choose an option: ").strip()
+            if choice == "1":  # View Team
+                DisplaySystem.show_team(team, pause=True)
+            elif choice == "2":  # View Positions
+                team.show_positions()
+                input("（按 Enter 繼續）")
+            elif choice == "3":  # Change Position
+                try:
+                    name = input("Enter member name: ").strip()
+                    pos = input("Enter new position (front/mid/back): ").strip().lower()
+                    if pos not in ["front", "mid", "back"]:
+                        print("Invalid position. Please enter 'front', 'mid', or 'back'.")
+                        continue
+                    team.change_position(name, pos)
+                    print(f"{name}'s position changed to {pos}.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "4":  # Fire Member
+                try:
+                    name = input("Enter member name to fire: ").strip()
+                    team.fire(name)
+                    print(f"{name} has been removed from the team.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "5":  # Add Member
+                if not team.backpack.items:
+                    print("The backpack is empty. No members available to add.")
+                    input("（按 Enter 繼續）")
+                    continue
+                try:
+                    DisplaySystem.show_backpack(team.backpack)
+                    try:
+                        item_idx = int(input("Enter the item number to add as a member: ")) - 1
+                    except ValueError:
+                        print("Invalid input. Please enter a valid number.")
+                        input("（按 Enter 繼續）")
+                        continue
+                    if 0 <= item_idx < len(team.backpack.items):
+                        item_name = list(team.backpack.items.keys())[item_idx]
+                        character = team.backpack.items[item_name]['item']
+                        if not isinstance(character, Character):
+                            print("Selected item is not a character.")
+                            input("（按 Enter 繼續）")
+                            continue
+                        if len(team.members) < 4:
+                            team.add_member(character)
+                            team.backpack.remove_item(item_name, 1)
+                            print(f"{character.name} has been added to the team.")
+                        else:
+                            print("The team is full. Cannot add more members.")
+                    else:
+                        print("Invalid item selection. Please try again.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "6":  # Return to Main Menu
+                break
+            else:
+                print("Invalid choice. Please enter a number between 1 and 6.")
+                input("（按 Enter 繼續）")
+
+    @staticmethod
+    def store(team):
+        # 確保 team.backpack 已初始化一次
+        if not hasattr(team, 'backpack') or not isinstance(team.backpack, Backpack):
+            team.backpack = Backpack()
+            print("背包已初始化。")
+        while True:
+            DisplaySystem.show_store_menu(team)  # 使用 DisplaySystem 顯示商店功能
+            try:
+                choice = int(input("Choose an option: "))
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                input("（按 Enter 繼續）")
+                continue
+
+            DisplaySystem.clear_screen()  # 清除螢幕，避免訊息被刷掉
+            if choice == 6:
+                break
+            elif choice in [1, 2, 3, 4, 5]:
+                if team.coin < 50:
+                    print("Not enough coins.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                attribute_map = {1: "STR", 2: "VIT", 3: "AGL", 4: "DEX", 5: "INT"}
+                attribute_name = attribute_map[choice]
+                print("Select a member to apply the attribute point:")
+                for idx, member in enumerate(team.members):
+                    print(f"{idx + 1}. {member.name}")
+                try:
+                    m_idx = int(input("輸入角色編號: ")) - 1
+                except ValueError:
+                    print("Invalid input. Please enter a valid number.")
+                    input("（按 Enter 繼續）")
+                    continue
+                if 0 <= m_idx < len(team.members):
+                    member = team.members[m_idx]
+                    team.spend_coin(50)
+                    current_value = getattr(member, attribute_name.lower())
+                    setattr(member, attribute_name.lower(), current_value + 1)
+                    print(f"{member.name}'s {attribute_name} increased by 1!")
+                    input("（按 Enter 繼續）")
+                else:
+                    print("Invalid member selection.\n")
+                    input("（按 Enter 繼續）")
+            elif choice == 7:  # Gacha Draw
+                if team.coin < 200:
+                    print("Not enough coins for gacha.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                pool_choice = input("Choose a pool: 1 for Character Pool, 2 for Equipment Pool: ").strip()
+                if pool_choice == "1":
+                    gacha_character = gacha_draw_character()
+                    team.backpack.add_item(gacha_character, 1)
+                    print(f"Gacha success! {gacha_character.name} has been added to the backpack!\n")
+                elif pool_choice == "2":
+                    gacha_equipment = gacha_draw_equipment()
+                    team.backpack.add_item(gacha_equipment, 1)
+                    print(f"Gacha success! {gacha_equipment.name} has been added to the backpack!\n")
+                else:
+                    print("Invalid pool choice.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                team.spend_coin(200)
+                input("（按 Enter 繼續）")
+            else:
+                print("Invalid choice. Please enter a valid option.\n")
+                input("（按 Enter 繼續）")
+
+    @staticmethod
+    def backpack_menu(team):
+        from rpg_game.src.display import DisplaySystem  # 確保顯示功能可用
+        from rpg_game.src.UpgradeSystem import upgrade_menu  # 匯入升級系統
+        # 確保 team.backpack 已初始化一次
+        if not hasattr(team, 'backpack') or not isinstance(team.backpack, Backpack):
+            team.backpack = Backpack()
+            print("背包已初始化。")
+        while True:
+            DisplaySystem.show_backpack_menu(team)  # 使用 display 提供的背包選單顯示函數
+            choice = input("選擇操作: ").strip()
+            if choice == "1":
+                DisplaySystem.show_backpack(team.backpack)
+            elif choice == "2":
+                try:
+                    if not team.backpack.items:
+                        print("背包是空的，沒有物品可用。")
+                        input("（按 Enter 繼續）")
+                        continue
+                    # 顯示背包內容並列出物品編號
+                    DisplaySystem.clear_screen()
+                    print("\n=== Backpack Items ===")
+                    for idx, (item_name, item_info) in enumerate(team.backpack.items.items(), start=1):
+                        item_type = "Character" if isinstance(item_info['item'], Character) else "Equipment" if isinstance(item_info['item'], Equipment) else "Other"
+                        print(f"{idx}. {item_name} ({item_type}) - Quantity: {item_info['quantity']}")
+                    print("======================")
+                    item_idx = int(input("輸入物品編號: ")) - 1
+                    if 0 <= item_idx < len(team.backpack.items):
+                        item_name = list(team.backpack.items.keys())[item_idx]
+                        item = team.backpack.items[item_name]['item']
+                        print(f"\n你選擇的物品：{item_name}")
+                        if isinstance(item, Character):
+                            upgrade_menu(team)
+                        elif isinstance(item, Equipment):
+                            upgrade_menu(team)
+                        else:
+                            print(f"{item_name} 是其他類型物品，請確認其用途。\n")
+                        input("（按 Enter 繼續）")
+                    else:
+                        print("無效的物品選擇。\n")
+                        input("（按 Enter 繼續）")
+                except ValueError:
+                    print("輸入錯誤，請輸入有效的編號。\n")
+                    input("（按 Enter 繼續）")
+            elif choice == "3":
+                break
+            else:
+                print("無效的選擇，請輸入 1, 2 或 3。\n")
+                input("（按 Enter 繼續）")

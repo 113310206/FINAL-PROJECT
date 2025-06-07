@@ -2,10 +2,9 @@ from rpg_game.src.character import Character
 from rpg_game.src.job import Warrior, Mage, Archer, Healer, Tank, KingKnight, Shooter
 from rpg_game.src.equipment import Equipment
 from rpg_game.src.skill import Skill, ElementalSkill, SupportElementalSkill
-from rpg_game.src.team import Team, team_menu  # 更新匯入，包含 team_menu
+from rpg_game.src.team import Team  # 移除 team_menu 依賴
 from rpg_game.src.display import DisplaySystem
-from rpg_game.src.store import store
-from rpg_game.src.backpack import Backpack, backpack_menu
+from rpg_game.src.backpack import Backpack
 from rpg_game.src.UpgradeSystem import UpgradeSystem, upgrade_menu
 import random
 import time
@@ -353,13 +352,12 @@ if __name__ == "__main__":
     # 創建初始角色
     archer1 = Archer("1", 1, 5, 5, 5, 5, 5)  # 創建 Archer 實例
     team.add_character(archer1.create_character())  # 調用 create_character 方法
-    warrior= Warrior("2", 1, 5, 5, 5, 5, 5)  # 創建第二個 Archer 實例
+    warrior = Warrior("2", 1, 5, 5, 5, 5, 5)  # 創建第二個 Archer 實例
     team.add_character(warrior.create_character())  # 調用 create_character 方法
     
     while True:
         DisplaySystem.show_main_menu()
         choice = input("Choose an option: ").strip()
-        
         if choice == "1":
             DisplaySystem.show_team(team, pause=True)
         elif choice == "2":
@@ -367,13 +365,13 @@ if __name__ == "__main__":
             battle = Battle(team, monster)
             battle.start()
         elif choice == "3":
-            store(team)
+            DisplaySystem.store(team)  # 更新 store 調用方式
         elif choice == "4":
-            team_menu(team)  # 改為從 team 模組中調用
+            DisplaySystem.team_menu(team)  # 更新 team_menu 調用方式
         elif choice == "5":
-            backpack_menu(team)
+            DisplaySystem.show_backpack(team.backpack, pause=True)
         elif choice == "6":
-            upgrade_menu(team)
+            DisplaySystem.show_upgrade_menu(team)
         elif choice == "7":
             print("Exiting game. Goodbye!")
             break
