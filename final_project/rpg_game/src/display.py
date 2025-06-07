@@ -1,0 +1,502 @@
+import os
+import time
+from rpg_game.src.character import Character  # 確保匯入 Character 類型
+from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
+from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
+from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment  # 確保匯入 gacha 函數
+from rpg_game.src.UpgradeSystem import UpgradeSystem  # 確保匯入 UpgradeSystem 類型
+
+class DisplaySystem:
+    @staticmethod
+    def clear_screen():
+        # 清除螢幕
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    @staticmethod
+    def show_character(character):
+        # 只顯示一行簡明資訊，直接印出
+        job_name = getattr(character, "job", None)
+        if job_name and hasattr(job_name, "job_name"):
+            job_name = job_name.job_name
+        elif hasattr(character, "name"):
+            job_name = character.name
+        else:
+            job_name = "無職業"
+        # 修正：怪物沒有 equipment 屬性時不顯示裝備
+        eqs = []
+        if hasattr(character, "equipment") and isinstance(character.equipment, dict):
+            eqs = [eq.name for eq in character.equipment.values() if eq]
+        info = f"{getattr(character, 'name', '-')}" \
+            f" | {job_name}" \
+            f" | Lv{getattr(character, 'level', '-')}" \
+            f" | ATK:{getattr(character, 'attack_power', getattr(character, 'attack', '-'))}" \
+            f" HP:{getattr(character, 'hp', '-')}/{getattr(character, 'max_hp', '-') if hasattr(character, 'max_hp') else '-'}" \
+            f" MP:{getattr(character, 'mp', '-')}/{getattr(character, 'max_mp', '-') if hasattr(character, 'max_mp') else '-'}" \
+            f" Armor:{getattr(character, 'armor', '-')}/{getattr(character, 'max_armor', '-') if hasattr(character, 'max_armor') else '-'}" \
+            f" | Elem:{getattr(character, 'element', 'None') or 'None'}" \
+            f" | Pos:{getattr(character, 'position', '-')}"
+        
+        if eqs:
+            info += f" | Eq:{','.join(eqs)}"
+        print(info)
+
+    @staticmethod
+    def show_equipment(equipment):
+        print(f"  {equipment.name} (Lv.{equipment.level}, {equipment.eq_type}) 屬性加成: {equipment.stat_bonus}")
+
+    @staticmethod
+    def show_monster(monster):
+        DisplaySystem.show_character(monster)
+
+    @staticmethod
+    def show_attack_message(attacker, target, damage, crit=False, element_boost=False, skill_boost=False):
+        DisplaySystem.clear_screen()
+        message = f"{attacker.name} attacked {target.name}, dealing {damage} damage!"
+        if crit:
+            message += " [Critical Hit!]"
+        if element_boost:
+            if attacker.element and target.element:
+                if attacker.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif attacker.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif attacker.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
+        if skill_boost:
+            message += " [Skill Boost!]"
+        print(message)
+        input("（按 Enter 繼續）")
+
+    @staticmethod
+    def show_monster_attack_message(monster, target, damage, crit=False, element_boost=False):
+        DisplaySystem.clear_screen()
+        if target:
+            message = f"{monster.name} attacked {target.name}, dealing {damage} damage!"
+        else:
+            message = f"{monster.name} performed a group attack, dealing {damage} damage to all members!"
+        if crit:
+            message += " [Critical Hit!]"
+        if element_boost:
+            if monster.element and target.element:
+                if monster.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif monster.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif monster.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
+        print(message)
+        input("（按 Enter 繼續）")
+
+    @staticmethod
+    def show_skill_boost(boost):
+        print(f"Skill boost! Damage x{boost}")
+
+    @staticmethod
+    def show_skill_use(user, skill, target, damage, crit=False, element_boost=False):
+        DisplaySystem.clear_screen()
+        message = f"{user.name} used {skill.name}! {skill.desc}\nDealt {damage} damage to {target.__class__.__name__}!"
+        if crit:
+            message += " [Critical Hit!]"
+        if element_boost:
+            message += " [Element Boost!]"
+        print(message)
+        input("（按 Enter 繼續）")
+
+    @staticmethod
+    def show_elementSkill_use(user, skill, target, damage, crit=False, element_boost=False):
+        DisplaySystem.clear_screen()
+        message = f"{user.name} used {skill.name} ({skill.element})! {skill.desc}\nDealt {damage} damage to {target.__class__.__name__}!"
+        if crit:
+            message += " [Critical Hit!]"
+        if element_boost:
+            if user.element and target.element:
+                if user.element == target.element:
+                    message += " [Element Synergy: Same Element!]"
+                elif user.element == "FIRE" and target.element == "WOOD":
+                    message += " [Element Advantage: FIRE > WOOD!]"
+                elif user.element == "WATER" and target.element == "FIRE":
+                    message += " [Element Advantage: WATER > FIRE!]"
+                elif user.element == "WOOD" and target.element == "WATER":
+                    message += " [Element Advantage: WOOD > WATER!]"
+        print(message)
+        if skill.element:
+            print(f"{target.name} is now affected by {skill.element} element.")
+            input("（按 Enter 繼續）")
+        if isinstance(target, user.__class__):
+            print(f"{target.name} has been blessed by {skill.name}!")
+            input("（按 Enter 繼續）")
+    
+    @staticmethod
+    def show_main_menu():
+        DisplaySystem.clear_screen()
+        print("\n=== Main Menu ===")
+        print("1. Show Team")
+        print("2. Battle")
+        print("3. Store")
+        print("4. Team Management")
+        print("5. Backpack")
+        print("6. Upgrade Character/Equipment")
+        print("7. Exit Game")
+    
+    @staticmethod
+    def show_battle_status(team, monster, pause=False):
+        DisplaySystem.clear_screen()
+        print("=== Battle Status ===")
+        print("\nTeam Status:")
+        DisplaySystem.show_team(team, pause=False)
+        print("\nMonster Status:")
+        DisplaySystem.show_monster(monster)
+        print("=====================")
+        if pause:
+            input("（按 Enter 繼續）")
+ 
+    @staticmethod
+    def show_team(team, pause=False):
+        DisplaySystem.clear_screen()
+        print("=== Team Members ===")
+        for member in team.members:
+            DisplaySystem.show_character(member)
+        print("=====================")
+        if pause:
+            input("（按 Enter 繼續）")
+
+    @staticmethod
+    def show_skill_tree(skill_tree):
+        DisplaySystem.clear_screen()
+        print("=== Skill Tree ===")
+        for skill in skill_tree.skills:
+            print(f"{skill.name} (Cost: {skill.cost}, Damage: {skill.damage}) - {skill.desc}")
+        print("===================")
+        input("（按 Enter 繼續）")
+    
+    @staticmethod
+    def show_backpack(backpack, pause=True):
+        DisplaySystem.clear_screen()
+        print("\n=== Backpack ===")
+        if not backpack.items:
+            print("The backpack is empty.")
+            print("================\n")
+            if pause:
+                input("（按 Enter 返回選單）")  # 按下 Enter 返回選單
+            return
+        else:
+            for idx, (item_name, data) in enumerate(backpack.items.items(), start=1):
+                item = data['item']
+                quantity = data['quantity']
+                item_type = "Character" if isinstance(item, Character) else "Equipment" if isinstance(item, Equipment) else "Other"
+                print(f"{idx}. {item_name} ({item_type}) - Quantity: {quantity}")
+        print("================\n")
+        if pause:
+            input("（按 Enter 繼續）")  # 暫停，等待使用者按下 Enter
+
+    @staticmethod
+    def show_store_menu(team):
+        DisplaySystem.clear_screen()
+        print("=== Store ===")
+        print("1. Increase STR (50 coins)")
+        print("2. Increase VIT (50 coins)")
+        print("3. Increase AGL (50 coins)")
+        print("4. Increase DEX (50 coins)")
+        print("5. Increase INT (50 coins)")
+        print("6. Exit Store")
+        print("7. Gacha Draw (200 coins)")  # 更新選項編號
+        print(f"Current Coins: {team.coin}")
+        print("================")
+    
+    @staticmethod
+    def show_team_menu():
+        DisplaySystem.clear_screen()
+        print("\n=== Team Management ===")
+        print("1. View Team")
+        print("2. View Positions")
+        print("3. Change Position")
+        print("4. Fire Member")
+        print("5. Add Member")
+        print("6. Return to Main Menu")
+        print("========================")
+    
+    @staticmethod
+    def upgrade_menu(team):
+        while True:
+            DisplaySystem.clear_screen()
+            print("\n=== Upgrade Menu ===")
+            print("1. Upgrade Character Level")
+            print("2. Enhance Character Attributes")
+            print("3. Upgrade Equipment")
+            print("4. Return to Main Menu")
+            print("======================")
+            choice = input("選擇操作: ").strip()
+            if choice == "1":
+                try:
+                    print("選擇角色：")
+                    print(f"隊伍總經驗值: {team.total_exp}")
+                    for idx, member in enumerate(team.members):
+                        print(f"{idx + 1}. {member.name} (Lv.{member.level}, EXP to Next Level: {member.exp_to_next_level})")
+                    member_idx = int(input("輸入角色編號: ")) - 1
+                    if 0 <= member_idx < len(team.members):
+                        member = team.members[member_idx]
+                        UpgradeSystem.level_up(team, member)
+                        input("按 Enter 繼續...")
+                        DisplaySystem.clear_screen()
+                    else:
+                        print("無效的角色選擇。\n")
+                        input("按 Enter 繼續...")
+                except ValueError:
+                    print("輸入錯誤，請輸入有效的編號。\n")
+                    input("按 Enter 繼續...")
+            elif choice == "2":
+                try:
+                    print("選擇角色：")
+                    print(f"隊伍總經驗值: {team.total_exp}")
+                    for idx, member in enumerate(team.members):
+                        print(f"{idx + 1}. {member.name}")
+                    member_idx = int(input("輸入角色編號: ")) - 1
+                    if 0 <= member_idx < len(team.members):
+                        member = team.members[member_idx]
+                        print("選擇要提升的屬性：")
+                        print("1. STR (力量)")
+                        print("2. VIT (體力)")
+                        print("3. AGL (敏捷)")
+                        print("4. DEX (技巧)")
+                        print("5. INT (智力)")
+                        attr_choice = input("輸入屬性編號: ").strip()
+                        if attr_choice == "1":
+                            UpgradeSystem.upgrade_attribute(team, member, "str")
+                        elif attr_choice == "2":
+                            UpgradeSystem.upgrade_attribute(team, member, "vit")
+                        elif attr_choice == "3":
+                            UpgradeSystem.upgrade_attribute(team, member, "agl")
+                        elif attr_choice == "4":
+                            UpgradeSystem.upgrade_attribute(team, member, "dex")
+                        elif attr_choice == "5":
+                            UpgradeSystem.upgrade_attribute(team, member, "intel")
+                        else:
+                            print("無效的屬性選擇。\n")
+                        input("按 Enter 繼續...")
+                    else:
+                        print("無效的角色選擇。\n")
+                        input("按 Enter 繼續...")
+                except ValueError:
+                    print("輸入錯誤，請輸入有效的編號。\n")
+                    input("按 Enter 繼續...")
+            elif choice == "3":
+                try:
+                    DisplaySystem.show_backpack(team.backpack)
+                    if not team.backpack.items:
+                        continue
+                    print(f"隊伍總經驗值: {team.total_exp}")
+                    item_idx = int(input("輸入物品編號: ")) - 1
+                    if 0 <= item_idx < len(team.backpack.items):
+                        item_name = list(team.backpack.items.keys())[item_idx]
+                        equipment = team.backpack.items[item_name]['item']
+                        if isinstance(equipment, Equipment):
+                            UpgradeSystem.upgrade_equipment(team, equipment)
+                        else:
+                            print(f"{item_name} 不是可升級的裝備。\n")
+                    else:
+                        print("無效的物品選擇。\n")
+                    input("按 Enter 繼續...")
+                except ValueError:
+                    print("輸入錯誤，請輸入有效的編號。\n")
+                    input("按 Enter 繼續...")
+            elif choice == "4":
+                break
+            else:
+                print("無效的選擇，請輸入 1, 2, 3 或 4。\n")
+                input("按 Enter 繼續...")
+            
+    @staticmethod
+    def show_backpack_menu(team):
+        DisplaySystem.clear_screen()
+        print("\n=== Backpack Menu ===")
+        print("1. 查看背包")
+        print("2. 使用物品")
+        print("3. 返回主選單")
+        print("======================")
+
+    @staticmethod
+    def team_menu(team):
+        from rpg_game.src.display import DisplaySystem  # 確保顯示功能可用
+        from rpg_game.src.character import Character  # 確保匯入 Character 類型
+        while True:
+            DisplaySystem.show_team_menu()  # 顯示 Team Management 選單
+            choice = input("Choose an option: ").strip()
+            if choice == "1":  # View Team
+                DisplaySystem.show_team(team, pause=True)
+            elif choice == "2":  # View Positions
+                team.show_positions()
+                input("（按 Enter 繼續）")
+            elif choice == "3":  # Change Position
+                try:
+                    name = input("Enter member name: ").strip()
+                    pos = input("Enter new position (front/mid/back): ").strip().lower()
+                    if pos not in ["front", "mid", "back"]:
+                        print("Invalid position. Please enter 'front', 'mid', or 'back'.")
+                        continue
+                    team.change_position(name, pos)
+                    print(f"{name}'s position changed to {pos}.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "4":  # Fire Member
+                try:
+                    name = input("Enter member name to fire: ").strip()
+                    team.fire(name)
+                    print(f"{name} has been removed from the team.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "5":  # Add Member
+                if not team.backpack.items:
+                    print("The backpack is empty. No members available to add.")
+                    input("（按 Enter 繼續）")
+                    continue
+                try:
+                    DisplaySystem.show_backpack(team.backpack)
+                    try:
+                        item_idx = int(input("Enter the item number to add as a member: ")) - 1
+                    except ValueError:
+                        print("Invalid input. Please enter a valid number.")
+                        input("（按 Enter 繼續）")
+                        continue
+                    if 0 <= item_idx < len(team.backpack.items):
+                        item_name = list(team.backpack.items.keys())[item_idx]
+                        character = team.backpack.items[item_name]['item']
+                        if not isinstance(character, Character):
+                            print("Selected item is not a character.")
+                            input("（按 Enter 繼續）")
+                            continue
+                        if len(team.members) < 4:
+                            team.add_member(character)
+                            team.backpack.remove_item(item_name, 1)
+                            print(f"{character.name} has been added to the team.")
+                        else:
+                            print("The team is full. Cannot add more members.")
+                    else:
+                        print("Invalid item selection. Please try again.")
+                except Exception as e:
+                    print(f"Error: {e}")
+                input("（按 Enter 繼續）")
+            elif choice == "6":  # Return to Main Menu
+                break
+            else:
+                print("Invalid choice. Please enter a number between 1 and 6.")
+                input("（按 Enter 繼續）")
+
+    @staticmethod
+    def store(team):
+        # 確保 team.backpack 已初始化一次
+        if not hasattr(team, 'backpack') or not isinstance(team.backpack, Backpack):
+            team.backpack = Backpack()
+            print("背包已初始化。")
+        while True:
+            DisplaySystem.show_store_menu(team)  # 使用 DisplaySystem 顯示商店功能
+            try:
+                choice = int(input("Choose an option: "))
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+                input("（按 Enter 繼續）")
+                continue
+
+            DisplaySystem.clear_screen()  # 清除螢幕，避免訊息被刷掉
+            if choice == 6:
+                break
+            elif choice in [1, 2, 3, 4, 5]:
+                if team.coin < 50:
+                    print("Not enough coins.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                attribute_map = {1: "STR", 2: "VIT", 3: "AGL", 4: "DEX", 5: "INT"}
+                attribute_name = attribute_map[choice]
+                print("Select a member to apply the attribute point:")
+                for idx, member in enumerate(team.members):
+                    print(f"{idx + 1}. {member.name}")
+                try:
+                    m_idx = int(input("輸入角色編號: ")) - 1
+                except ValueError:
+                    print("Invalid input. Please enter a valid number.")
+                    input("（按 Enter 繼續）")
+                    continue
+                if 0 <= m_idx < len(team.members):
+                    member = team.members[m_idx]
+                    team.spend_coin(50)
+                    current_value = getattr(member, attribute_name.lower())
+                    setattr(member, attribute_name.lower(), current_value + 1)
+                    print(f"{member.name}'s {attribute_name} increased by 1!")
+                    input("（按 Enter 繼續）")
+                else:
+                    print("Invalid member selection.\n")
+                    input("（按 Enter 繼續）")
+            elif choice == 7:  # Gacha Draw
+                if team.coin < 200:
+                    print("Not enough coins for gacha.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                pool_choice = input("Choose a pool: 1 for Character Pool, 2 for Equipment Pool: ").strip()
+                if pool_choice == "1":
+                    gacha_character = gacha_draw_character()
+                    team.backpack.add_item(gacha_character, 1)
+                    print(f"Gacha success! {gacha_character.name} has been added to the backpack!\n")
+                elif pool_choice == "2":
+                    gacha_equipment = gacha_draw_equipment()
+                    team.backpack.add_item(gacha_equipment, 1)
+                    print(f"Gacha success! {gacha_equipment.name} has been added to the backpack!\n")
+                else:
+                    print("Invalid pool choice.\n")
+                    input("（按 Enter 繼續）")
+                    continue
+                team.spend_coin(200)
+                input("（按 Enter 繼續）")
+            else:
+                print("Invalid choice. Please enter a valid option.\n")
+                input("（按 Enter 繼續）")
+
+    @staticmethod
+    def backpack_menu(team):
+        from rpg_game.src.display import DisplaySystem  # 確保顯示功能可用
+        from rpg_game.src.UpgradeSystem import upgrade_menu  # 匯入升級系統
+        # 確保 team.backpack 已初始化一次
+        if not hasattr(team, 'backpack') or not isinstance(team.backpack, Backpack):
+            team.backpack = Backpack()
+            print("背包已初始化。")
+        while True:
+            DisplaySystem.show_backpack_menu(team)  # 使用 display 提供的背包選單顯示函數
+            choice = input("選擇操作: ").strip()
+            if choice == "1":
+                DisplaySystem.show_backpack(team.backpack)
+            elif choice == "2":
+                try:
+                    if not team.backpack.items:
+                        print("背包是空的，沒有物品可用。")
+                        input("（按 Enter 繼續）")
+                        continue
+                    # 顯示背包內容並列出物品編號
+                    DisplaySystem.clear_screen()
+                    print("\n=== Backpack Items ===")
+                    for idx, (item_name, item_info) in enumerate(team.backpack.items.items(), start=1):
+                        item_type = "Character" if isinstance(item_info['item'], Character) else "Equipment" if isinstance(item_info['item'], Equipment) else "Other"
+                        print(f"{idx}. {item_name} ({item_type}) - Quantity: {item_info['quantity']}")
+                    print("======================")
+                    item_idx = int(input("輸入物品編號: ")) - 1
+                    if 0 <= item_idx < len(team.backpack.items):
+                        item_name = list(team.backpack.items.keys())[item_idx]
+                        item = team.backpack.items[item_name]['item']
+                        print(f"\n你選擇的物品：{item_name}")
+                        if isinstance(item, Character):
+                            upgrade_menu(team)
+                        elif isinstance(item, Equipment):
+                            upgrade_menu(team)
+                        else:
+                            print(f"{item_name} 是其他類型物品，請確認其用途。\n")
+                        input("（按 Enter 繼續）")
+                    else:
+                        print("無效的物品選擇。\n")
+                        input("（按 Enter 繼續）")
+                except ValueError:
+                    print("輸入錯誤，請輸入有效的編號。\n")
+                    input("（按 Enter 繼續）")
+            elif choice == "3":
+                break
+            else:
+                print("無效的選擇，請輸入 1, 2 或 3。\n")
+                input("（按 Enter 繼續）")
