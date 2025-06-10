@@ -1,4 +1,4 @@
-
+RED = (255, 0, 0)  # 確保顏色定義存在
 
 class Equipment:
     def __init__(self, name, eq_type, stat_bonus, level=1):
@@ -6,33 +6,45 @@ class Equipment:
         self.eq_type = eq_type  # 'weapon', 'armor', 'accessory'
         self.stat_bonus = stat_bonus  # dict: {'str':2, ...}
         self.level = level
+        self.is_equipped = False  # 新增屬性，追蹤是否已被裝備
 
     def equip(self, character):
-        # �ʺA�פJ�קK�`���̿�
-        if not hasattr(character, "name"):
-            print("Invalid character type.")
+        """裝備物品並保留物品在背包中"""
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        if self.is_equipped:  # 檢查是否已被其他角色裝備
+            DisplaySystem.show_message(f"{self.name} is already equipped by another character.", color=RED)
             return
         for k, v in self.stat_bonus.items():
             if hasattr(character, k):
                 setattr(character, k, getattr(character, k) + v * self.level)
-        print(f"{character.name} equipped {self.name} (Lv.{self.level})!")
+        if self.eq_type == "weapon":  # 添加武器攻擊加成    
+            character.attack_power += self.stat_bonus.get("atk", 0) * self.level
+        elif self.eq_type == "armor":  # 添加防禦加成
+            character.armor += self.stat_bonus.get("def", 0) * self.level
+        elif self.eq_type == "accessory":  # 添加魔力加成
+            character.mp += self.stat_bonus.get("mp", 0) * self.level
+        character.equipment[self.eq_type] = self  # 更新角色的裝備
+        self.is_equipped = True  # 標記為已裝備
+        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!")
 
     def unequip(self, character):
-        # �ʺA�פJ�קK�`���̿�
-        if not hasattr(character, "name"):
-            print("Invalid character type.")
-            return
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
         for k, v in self.stat_bonus.items():
             if hasattr(character, k):
                 setattr(character, k, getattr(character, k) - v * self.level)
-        print(f"{character.name} unequipped {self.name} (Lv.{self.level})!")
+        self.is_equipped = False  # 標記為未裝備
+        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!")
+
+    def is_equipped(self):
+        """檢查裝備是否已被裝備"""
+        return self.is_equipped
 
 class EquipmentType:
     def __init__(self, name, eq_type, stat_bonus, level=1):
-        self.name = name  # �˳ƦW��
-        self.eq_type = eq_type  # �˳����� ('weapon', 'armor', 'accessory')
-        self.stat_bonus = stat_bonus  # �ݩʥ[��
-        self.level = level  # �˳Ƶ���
+        self.name = name  # 裝備名稱
+        self.eq_type = eq_type  # 裝備類型 ('weapon', 'armor', 'accessory')
+        self.stat_bonus = stat_bonus  # 屬性加成
+        self.level = level  # 裝備等級
 
     def create_equipment(self):
         return Equipment(self.name, self.eq_type, self.stat_bonus, self.level)
@@ -44,7 +56,8 @@ class excalibur(EquipmentType):
 
     def use_special_effect(self, target):
         if target.element == "undead":
-            print(f"{self.name} deals extra holy damage to {target.name}!")
+            from rpg_game.src.display import DisplaySystem
+            DisplaySystem.show_message(f"{self.name} deals extra holy damage to {target.name}!")
             target.hp -= 20  # Example of special effect
 
 class thors_hammer(EquipmentType):
@@ -55,7 +68,8 @@ class thors_hammer(EquipmentType):
     def use_special_effect(self, target):
         import random
         if random.random() < 0.3:  # 30% chance to stun
-            print(f"{self.name} stuns {target.name}!")
+            from rpg_game.src.display import DisplaySystem
+            DisplaySystem.show_message(f"{self.name} stuns {target.name}!")
             target.is_stunned = True  # Assuming target has an is_stunned attribute
 
 class shild(EquipmentType):
@@ -65,7 +79,8 @@ class shild(EquipmentType):
 
     def use_special_effect(self, damage):
         reduced_damage = damage * 0.7  # Example of special effect
-        print(f"{self.name} reduces damage taken to {reduced_damage}!")
+        from rpg_game.src.display import DisplaySystem
+        DisplaySystem.show_message(f"{self.name} reduces damage taken to {reduced_damage}!")
         return reduced_damage
     
 class book(EquipmentType):
@@ -75,7 +90,8 @@ class book(EquipmentType):
 
     def use_special_effect(self, character):
         character.mp += 5 * self.level  # Example of special effect
-        print(f"{character.name} gains extra mana from {self.name}!")
+        from rpg_game.src.display import DisplaySystem
+        DisplaySystem.show_message(f"{character.name} gains extra mana from {self.name}!")
 
 class ring(EquipmentType):
     def __init__(self, level=1):
@@ -83,6 +99,6 @@ class ring(EquipmentType):
         self.special_effect = "Increases attack power and critical hit chance"
 
     def use_special_effect(self, character):
-        character.attack_power += 3 * self.level  # Example of special effect
-        print(f"{character.name} gains extra attack power from {self.name}!")
+        character.attack_power += 3 * self.level
+        DisplaySystem.show_message(f"{character.name} gains extra mana from {self.name}!")
 

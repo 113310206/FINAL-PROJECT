@@ -1,6 +1,7 @@
 from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
 from rpg_game.src.character import Character  # 確保匯入 Character 類型
 from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
+# 從這裡移除 DisplaySystem 的匯入
 
 class UpgradeSystem:
     # 自訂每個等級升級所需的經驗值
@@ -20,14 +21,13 @@ class UpgradeSystem:
 
     @staticmethod
     def level_up(team, character):
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
         # 檢查總經驗值是否足夠升級
-        
         if team.total_exp < character.exp_to_next_level:
-            print(f"隊伍的總經驗值不足，無法升級！需要 {character.exp_to_next_level - team.total_exp} 額外經驗值。")
+            DisplaySystem.show_message(f"隊伍的總經驗值不足，無法升級！需要 {character.exp_to_next_level - team.total_exp} 額外經驗值。")
             return
 
         # 升級角色等級並提升六屬性
-        
         team.total_exp -= character.exp_to_next_level
         character.level += 1
         character.exp_to_next_level = UpgradeSystem.calculate_exp_to_next_level(character.level)
@@ -46,33 +46,32 @@ class UpgradeSystem:
         character.dex += 1
         character.intel += 1
 
-        print(f"{character.name} 升級到等級 {character.level}！六屬性提升：STR+1, VIT+1, AGL+1, DEX+1, INT+1")
+        DisplaySystem.show_message(f"{character.name} 升級到等級 {character.level}！六屬性提升：STR+1, VIT+1, AGL+1, DEX+1, INT+1")
 
     @staticmethod
     def upgrade_attribute(team, character, attribute, cost=50):
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
         # 檢查總經驗值是否足夠提升屬性
         if team.total_exp < cost:
-            print(f"隊伍的總經驗值不足，無法提升屬性！需要 {cost - team.total_exp} 額外經驗值。")
+            DisplaySystem.show_message(f"隊伍的總經驗值不足，無法提升屬性！需要 {cost - team.total_exp} 額外經驗值。")
             return
 
         # 提升屬性
         team.total_exp -= cost
         setattr(character, attribute, getattr(character, attribute) + 1)
-        print(f"{character.name} 的 {attribute.upper()} 提升了 1 點！")
+        DisplaySystem.show_message(f"{character.name} 的 {attribute.upper()} 提升了 1 點！", color=GREEN)
 
     @staticmethod
     def upgrade_equipment(team, equipment, cost=100):
-        # 檢查總經驗值是否足夠升級裝備
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
         if team.total_exp < cost:
-            print(f"隊伍的總經驗值不足，無法升級裝備！需要 {cost - team.total_exp} 額外經驗值。")
+            DisplaySystem.show_message(f"隊伍的總經驗值不足，無法升級裝備！需要 {cost - team.total_exp} 額外經驗值。")
             return
-
-        # 升級裝備等級
         if hasattr(equipment, "level"):
             team.total_exp -= cost
             equipment.level += 1
-            print(f"{equipment.name} 升級到等級 {equipment.level}！")
+            DisplaySystem.show_message(f"{equipment.name} 升級到等級 {equipment.level}！")
         else:
-            print("無法升級此裝備。")
+            DisplaySystem.show_message("無法升級此裝備。")
 
 

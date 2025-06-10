@@ -1,10 +1,15 @@
 from .character import Character
 from .skill import Skill, ElementalSkill
 
+FIRE = "FIRE"
+WATER = "WATER"
+WOOD = "WOOD"
+
 class JobBase:
     def __init__(self, name, level, s, v, ag, d, i, job=None, position=None, element=None):
-        if element not in ["WATER", "FIRE", "WOOD"]:
-            raise ValueError("Invalid element. Must be 'WATER', 'FIRE', or 'WOOD'.")
+        if element not in [FIRE, WATER, WOOD]:
+            raise ValueError(f"Invalid element '{element}'. Must be FIRE, WATER, or WOOD.")
+        self.element = element or FIRE  # 默認值改為 FIRE
         self.name = name
         self.level = level
         self.str = s
@@ -14,7 +19,6 @@ class JobBase:
         self.intel = i
         self.job = job
         self.position = position
-        self.element = element  # 新增元素屬性
         self.job_name = name  # 新增 job_name 屬性
 
     def create_character(self):
@@ -27,7 +31,7 @@ class Warrior(JobBase):
 
     def create_character(self):
         skill_obj = Skill("Power Strike", 10, 40, "A heavy blow to the enemy.")
-        elem_skill = ElementalSkill("Flame Slash", 20, 50, "FIRE", "A fiery slash that burns the enemy.")
+        elem_skill = ElementalSkill("Flame Slash", 20, 50, "FIRE", "A fiery slash that burns the enemy.")  # 使用 FIRE 變數
         return Character(self.name, self.level, self.str, self.vit, self.agl, self.dex, self.intel, skill_obj, elem_skill, self.element, self.job, self.position)
 
 
@@ -37,7 +41,7 @@ class Mage(JobBase):
 
     def create_character(self):
         skill_obj = Skill("Arcane Shield", 15, 0, "Grants a magic shield (no damage).")
-        elem_skill = ElementalSkill("Water Blast", 30, 60, "WATER", "A blast of water that soaks the enemy.")
+        elem_skill = ElementalSkill("Water Blast", 30, 60, "WATER", "A blast of water that soaks the enemy.")  # 使用 WATER 變數
         return Character(self.name, self.level, self.str, self.vit, self.agl, self.dex, self.intel, skill_obj, elem_skill, self.element, self.job, self.position)
 
 
@@ -47,7 +51,7 @@ class Archer(JobBase):
 
     def create_character(self):
         skill_obj = Skill("Arrow Barrage", 15, 20, "Shoots a barrage of arrows.")
-        elem_skill = ElementalSkill("Nature's Wrath", 30, 60, "WOOD", "Unleashes the wrath of nature.")
+        elem_skill = ElementalSkill("Nature's Wrath", 30, 60, "WOOD", "Unleashes the wrath of nature.")  # 使用 WOOD 變數
         return Character(self.name, self.level, self.str, self.vit, self.agl, self.dex, self.intel, skill_obj, elem_skill, self.element, self.job, self.position)
 
 
@@ -87,5 +91,5 @@ class Shooter(JobBase):
 
     def create_character(self):
         skill_obj = Skill("Rapid Fire", 15, 25, "Fires multiple arrows in quick succession.")
-        elem_skill = ElementalSkill("Wind Arrow", 30, 55, "WATER", "An arrow infused with the power of water.")
+        elem_skill = ElementalSkill("Wind Arrow", 30, 55, "WATER", "An arrow infused with the power of water.")  # 修正元素屬性
         return Character(self.name, self.level, self.str, self.vit, self.agl, self.dex, self.intel, skill_obj, elem_skill, self.element, self.job, self.position)

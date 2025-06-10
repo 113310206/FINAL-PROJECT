@@ -1,7 +1,9 @@
 from .skill import Skill, ElementalSkill
+from .equipment import Equipment  # 確保匯入 Equipment 類別
 
+GREEN = (0, 255, 0)
 class Character:
-    def __init__(self, name, level, str_attr, vit, agl, dex, intel, skill, element_skill, element=None, job=None, position="front"):
+    def __init__(self, name, level, str_attr, vit, agl, dex, intel, skill, element_skill, element=None, job=None, position="front", team=None):
         self.name = name
         self.level = level
         self.str = str_attr
@@ -18,14 +20,16 @@ class Character:
         self.attack_power = 10 + str_attr * 30
         self.skill = skill
         self.element_skill = element_skill
-        self.element = element
+        self.element = element or "None"  # 確保元素屬性有默認值
         self.exp = 0
         self.exp_to_next_level = 100 + level ^ 3
         self.equipment = {'weapon': None, 'armor': None, 'accessory': None}
         self.job = job
         self.position = position
         self.damage_boost = 1
-        self.skill_tree = None  # �Y�D�{�����Ψ�i�ɤW
+        self.skill_tree = None 
+        self.team = team  # 新增 team 屬性，用於辨認隊友
+        self.element_boost = False  # 初始化元素加成屬性
 
     def is_alive(self):
         return self.hp > 0
@@ -38,32 +42,36 @@ class Character:
         print(f"Element: {self.element or 'None'} | EXP: {self.exp}/{self.exp_to_next_level}")
         print(f"位置: {self.position}")
         print("裝備：")
-        for eq in self.equipment.values():
+        for eq_type, eq in self.equipment.items():
             if eq:
-                print(f"  {eq.name} (Lv.{eq.level}, {eq.eq_type}) 屬性加成: {eq.stat_bonus}")
+                print(f"  {eq_type.capitalize()}: {eq.name} (Lv.{eq.level}, {eq.eq_type}) 屬性加成: {eq.stat_bonus}")
+            else:
+                print(f"  {eq_type.capitalize()}: 無")
         print("-" * 30)
 
-    def equip(self, equipment):
-        # 動態匯入避免循環依賴
-        from .equipment import Equipment  # 動態匯入
-        if not isinstance(equipment, Equipment):
-            print("Invalid equipment type.")
+    def equip(self, equipment, backpack):
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        """裝備物品並保留物品在背包中"""
+        if equipment.is_equipped:  # 檢查是否已被其他角色裝備
+            DisplaySystem.show_message(f"{equipment.name} 已被其他角色裝備，無法再次裝備。")
             return
+        else:
+            DisplaySystem.show_message(f"{self.name} 裝備了 {equipment.name} (Lv.{equipment.level})！", color=GREEN)
         if self.equipment.get(equipment.eq_type):  # 檢查是否已有同類型裝備
-            self.unequip(equipment.eq_type)
+            self.unequip(equipment.eq_type, backpack)
         self.equipment[equipment.eq_type] = equipment
         equipment.equip(self)
-        print(f"{self.name} 裝備了 {equipment.name} (Lv.{equipment.level})！")
 
-    def unequip(self, eq_type):
+    def unequip(self, eq_type, backpack):
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        """卸下裝備並返回到背包"""
         eq = self.equipment.get(eq_type)
         if eq:
-            if hasattr(eq, "name"):
-                eq.unequip(self)
-            self.equipment[eq_type] = None
+            eq.unequip(self)
+            self.equipment[eq_type] = None  # 移除裝備
             print(f"{self.name} 卸下了 {eq.name} (Lv.{eq.level})！")
         else:
-            print(f"No equipment of type {eq_type} to unequip.")
+            print(f"{self.name} 沒有裝備 {eq_type} 類型的物品，無法卸下。")
 
     def gain_exp(self, amount):
         self.exp += amount
@@ -96,19 +104,25 @@ class Character:
         else:
             return False
 
-    def use_skill(self, target):
-        if self.skill:
-            self.skill.use(self, target)
-
-    def use_elemental_skill(self, target):
-        if self.element_skill:
-            self.element_skill.use(self, target)
-
     def upgrade_skill(self):
         if self.skill_tree:
             skill_name = input("輸入要升級的技能名稱：").strip()
             self.skill_tree.upgrade(skill_name)
         else:
             print("此角色沒有技能樹，無法升級技能。")
+
+    def is_equipped(self, equipment_name):
+        """檢查角色是否已裝備指定名稱的裝備"""
+        return any(eq and eq.name == equipment_name for eq in self.equipment.values())
+
+    def change_element(self, new_element):
+        """動態變更角色的元素種類"""
+        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        old_element = self.element
+        self.element = new_element
+        DisplaySystem.show_message(
+            f"{self.name}'s element has been changed from {old_element} to {self.element}!",
+            color=GREEN
+        )
 
 

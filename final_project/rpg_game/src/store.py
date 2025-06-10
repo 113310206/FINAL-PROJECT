@@ -20,4 +20,4 @@ def gacha_draw_equipment():
     equipment_classes = [excalibur, thors_hammer, shild, book, ring]
     equipment_class = random.choice(equipment_classes)
     level = random.randint(1, 5)
-    return equipment_class(level).create_equipment()  # 使用 create_equipment 方法生成裝備
+    return equipment_class(level).create_equipment()
