@@ -1,13 +1,9 @@
 import os
 import time
 import pygame
-from rpg_game.src.character import Character  # 確保匯入 Character 類型
-from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
-from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment  # 確保匯入 gacha 函數
-
 # 初始化 pygame
 pygame.init()
-screen = pygame.display.set_mode((800, 600))
+screen = pygame.display.set_mode((1200, 700))
 pygame.display.set_caption("RPG Game GUI")
 
 WHITE = (255, 255, 255)
@@ -16,23 +12,18 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 
-# 新增背景圖片載入功能
-background_image = None
-
-def load_background_image(path, size=(1200, 700)):
-    try:
-        img = pygame.image.load(path)
-        return pygame.transform.scale(img, size)
-    except Exception:
-        return None
+screen =pygame.display.set_mode((1200, 700))
+image = pygame.image.load("C:/CODing/PYTHON/final_project1/background.jpg")
+image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
+image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
+background = pygame.transform.scale(image, (1200, 700))
+store = pygame.transform.scale(image_s, (1200, 700))
+vectory = pygame.transform.scale(image_v, (1200, 700))
 
 class DisplaySystem:
     @staticmethod
     def clear_screen():
-        if background_image:
-            screen.blit(background_image, (0, 0))
-        else:
-            screen.fill(WHITE)
+        screen.fill(WHITE)
         pygame.display.flip()
 
     @staticmethod
@@ -43,6 +34,7 @@ class DisplaySystem:
         text_rect = text_surface.get_rect(center=(400, 300))
         screen.blit(text_surface, text_rect)
         pygame.display.flip()
+
         if wait_time and wait_time > 0:
             pygame.time.wait(wait_time)
         else:
@@ -209,6 +201,8 @@ class DisplaySystem:
     def show_backpack(backpack, pause=True):
         # 延遲匯入 Backpack
         from rpg_game.src.backpack import Backpack
+        from rpg_game.src.character import Character
+        from rpg_game.src.equipment import Equipment
         DisplaySystem.clear_screen()
         font = pygame.font.Font(None, 24)
         y_offset = 50
@@ -272,6 +266,7 @@ class DisplaySystem:
     
     @staticmethod
     def show_team_menu(team):
+        from rpg_game.src.character import Character  # 確保匯入 Character 類型
         DisplaySystem.clear_screen()
         font = pygame.font.Font(None, 36)
         options = [
@@ -353,6 +348,7 @@ class DisplaySystem:
 
     @staticmethod
     def upgrade_menu(team):
+        from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
         DisplaySystem.clear_screen()
         font = pygame.font.Font(None, 36)
         options = [
@@ -508,8 +504,11 @@ class DisplaySystem:
 
     @staticmethod
     def store(team):
+        from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment  # 確保匯入 Gacha 函數
+        screen.blit(store, (0, 0))  # 使用背景圖片
+        pygame.display.flip()
         while True:
-            DisplaySystem.clear_screen()
+
             font = pygame.font.Font(None, 36)
             options = [
                 "1. Increase STR (50 coins)",
@@ -584,7 +583,9 @@ class DisplaySystem:
                 input("（按 Enter 繼續）")
     @staticmethod
     def backpack_menu(backpack):
+        from rpg_game.src.character import Character  # 確保匯入 Character 類型
         from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
+        from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
         while True:
             DisplaySystem.clear_screen()
             font = pygame.font.Font(None, 36)

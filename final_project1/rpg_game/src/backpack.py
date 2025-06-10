@@ -1,6 +1,3 @@
-from rpg_game.src.equipment import Equipment  # 匯入 Equipment 類別
-from rpg_game.src.character import Character  # 匯入 Character 類型
-
 class Backpack:
     def __init__(self, team):
         """初始化背包並綁定隊伍"""
@@ -9,6 +6,8 @@ class Backpack:
 
     def add_item(self, item, quantity=1):
         from rpg_game.src.display import DisplaySystem  # 動態匯入
+        from rpg_game.src.equipment import Equipment  # 匯入 Equipment 類別
+        from rpg_game.src.character import Character  # 匯入 Character 類型
         BLUE, RED = (0, 0, 255), (255, 0, 0)  # 動態定義顏色
         if isinstance(item, dict) and item.get("type") == "attribute_point":
             item_name = f"{item['attribute']} Attribute Point"

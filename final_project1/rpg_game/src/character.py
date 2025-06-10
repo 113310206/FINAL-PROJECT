@@ -1,6 +1,3 @@
-from .skill import Skill, ElementalSkill
-from .equipment import Equipment  # 確保匯入 Equipment 類別
-
 GREEN = (0, 255, 0)
 
 ELEMENTS = ["FIRE", "WATER", "WOOD"]

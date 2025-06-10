@@ -17,6 +17,11 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
+screen = pygame.display.set_mode((1200, 700))
+image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
+imafe_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
+vectory = pygame.transform.scale(image_v, (1200, 700))
+battle = pygame.transform.scale(imafe_b, (1200, 700))
 
 class Monster:
     def __init__(self, hp, attack, element=None, skills=None, behavior=None, round_number=1):
@@ -194,6 +199,8 @@ class Battle:
 
     def start(self):
         while True:
+            screen.blit(battle, (0, 0))
+            pygame.display.flip()
             DisplaySystem.clear_screen()
             DisplaySystem.show_battle_status(self.team, self.monster)
 
@@ -364,10 +371,13 @@ class Battle:
                         DisplaySystem.show_message("Invalid choice. Please select a valid option.")
 
                 if self.monster.hp <= 0:
-                    DisplaySystem.show_message("Victory! The monster has been defeated.")
+                    screen.blit(vectory, (0, 0))
+                    pygame.display.flip()
                     exp_reward = 1000
                     coin_reward = 100
-                    DisplaySystem.show_message(f"Rewards: {exp_reward} EXP, {coin_reward} Coins")
+                    DisplaySystem.show_message(f"Rewards: {exp_reward} EXP, {coin_reward} Coins"
+                                               f"Victory! The monster has been defeated.")
+                    screen.blit(vectory, (0, 0))
                     self.team.add_exp(exp_reward)
                     self.team.add_coin(coin_reward)
                     return
@@ -379,99 +389,4 @@ class Battle:
             if all(not m.is_alive() for m in self.team.members):
                 DisplaySystem.show_message("Game Over! The team has been defeated.")
                 return
-
-if __name__ == "__main__":
-    # 初始化 pygame
-    pygame.init()
-    screen = pygame.display.set_mode((1200, 700))  # 定義 screen
-    pygame.display.set_caption("RPG Game GUI")
-
-    # 嘗試載入主畫面圖片，若不存在則 fallback 為背景或純色
-    try:
-        main_menu_img = pygame.image.load("solo_leveling.jpg").convert()
-        main_menu_img = pygame.transform.scale(main_menu_img, (1200, 700))
-    except Exception:
-        main_menu_img = None
-
-    try:
-        background = pygame.image.load("background.jpg").convert()
-        background = pygame.transform.scale(background, (1200, 700))
-    except Exception:
-        background = None
-
-    # 進入遊戲顯示開始畫面
-    font = pygame.font.Font(None, 72)
-    if background:
-        screen.blit(background, (0, 0))
-    else:
-        screen.fill(WHITE)
-    start_text = font.render("RPG Game Start", True, BLUE)
-    exit_text = font.render("Exit", True, RED)
-    start_rect = start_text.get_rect(center=(600, 250))
-    exit_rect = exit_text.get_rect(center=(600, 400))
-    screen.blit(start_text, start_rect)
-    screen.blit(exit_text, exit_rect)
-    pygame.display.flip()
-
-    # 等待玩家選擇開始或退出
-    waiting = True
-    while waiting:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = event.pos
-                if start_rect.collidepoint(mouse_pos):
-                    waiting = False
-                elif exit_rect.collidepoint(mouse_pos):
-                    pygame.quit()
-                    exit()
-
-    team = Team()
-    team.backpack = Backpack(team)  # 傳入 team 作為參數
-    
-    # 創建初始角色（不顯示訊息）
-    archer1 = Archer("Archer1", 1, 5, 5, 5, 5, 5)
-    team.members.append(archer1.create_character())
-    team.members[-1].team = team
-    warrior = Warrior("Warrior1", 1, 5, 5, 5, 5, 5)
-    team.members.append(warrior.create_character())
-    team.members[-1].team = team
-    
-    round_number = 1  # 初始化輪次
-    while True:
-        # 主畫面顯示圖片
-        if main_menu_img:
-            screen.blit(main_menu_img, (0, 0))
-        elif background:
-            screen.blit(background, (0, 0))
-        else:
-            screen.fill(WHITE)
-        pygame.display.flip()
-
-        buttons = DisplaySystem.show_main_menu()  # 顯示主選單並返回按鈕
-        action = DisplaySystem.handle_click(buttons)  # 等待玩家點擊選項
-        if action == "1. Show Team":
-            DisplaySystem.show_team(team)
-        elif action == "2. Battle":
-            monster = Monster(500, 15, "WATER", [Skill("Fireball", 1, 1)], "berserk", round_number)
-            battle = Battle(team, monster, round_number)
-            battle.start()
-            round_number += 1  # 每次戰鬥結束後增加輪次
-        elif action == "3. Store":
-            DisplaySystem.store(team)
-        elif action == "4. Team Management":
-            DisplaySystem.show_team_menu(team)
-        elif action == "5. Backpack":
-            DisplaySystem.backpack_menu(team.backpack)  # 傳入 team.backpack 而非 team
-        elif action == "6. Upgrade Character/Equipment":
-            DisplaySystem.upgrade_menu(team)
-        elif action == "7. Exit Game":
-            DisplaySystem.show_message("Exiting game. Goodbye!", color=RED)
-            pygame.quit()
-            break
-        else:
-            DisplaySystem.show_message("Invalid choice. Please select a valid option.", color=RED)
-
 

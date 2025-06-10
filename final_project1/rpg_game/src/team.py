@@ -1,4 +1,3 @@
-from rpg_game.src.display import DisplaySystem  # 匯入 DisplaySystem
 
 class Team:
     def __init__(self):
@@ -74,6 +73,7 @@ class Team:
         DisplaySystem.show_message(f"=== Positions ===\n{positions}\n=================")
 
     def add_member(self, character):
+        from rpg_game.src.display import DisplaySystem
         if len(self.members) < 4:
             self.members.append(character)
             DisplaySystem.show_message(f"{character.name} 加入隊伍！")  # 使用 DisplaySystem
