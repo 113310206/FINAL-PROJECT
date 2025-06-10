@@ -9,9 +9,9 @@ from final_project import Battle
 
 pygame.font.init()
 screen =pygame.display.set_mode((1200, 700))
-image = pygame.image.load("C:/CODing/PYTHON/final_project1/background.jpg")
-image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
-image_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
+image = pygame.image.load("background.jpg")
+image_s = pygame.image.load("store.jpg")
+image_b = pygame.image.load("battle.jpg")
 background = pygame.transform.scale(image, (1200, 700))
 store = pygame.transform.scale(image_s, (1200, 700))
 battle = pygame.transform.scale(image_b, (1200, 700))
@@ -73,9 +73,7 @@ while game_running:
         if action == "1. Show Team":
             DisplaySystem.show_team(team)
         elif action == "2. Battle":
-            screen.blit(battle, (0, 0))
-            pygame.display.flip()
-            monster = Monster(500, 15, "WATER", [Skill("Fireball", 1, 1)], "berserk", round_number)
+            monster = Monster(15, 500, "WATER", [Skill("Fireball", 1, 1)], "berserk", round_number)
             battle = Battle(team, monster, round_number)
             battle.start()
             round_number += 1  # 每次戰鬥結束後增加輪次

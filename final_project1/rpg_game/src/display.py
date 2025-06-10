@@ -12,18 +12,23 @@ RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 
-screen =pygame.display.set_mode((1200, 700))
-image = pygame.image.load("C:/CODing/PYTHON/final_project1/background.jpg")
-image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
-image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
+screen = pygame.display.set_mode((1200, 700))
+image = pygame.image.load("background.jpg")
+image_s = pygame.image.load("store.jpg")
+image_v = pygame.image.load("vectory.jpg")
 background = pygame.transform.scale(image, (1200, 700))
 store = pygame.transform.scale(image_s, (1200, 700))
 vectory = pygame.transform.scale(image_v, (1200, 700))
 
 class DisplaySystem:
     @staticmethod
-    def clear_screen():
-        screen.fill(WHITE)
+    def clear_screen(background=None, extra_draw=None):
+        if background:
+            screen.blit(background, (0, 0))
+        else:
+            screen.fill(WHITE)
+        if extra_draw:
+            extra_draw()
         pygame.display.flip()
 
     @staticmethod
@@ -221,8 +226,8 @@ class DisplaySystem:
             pygame.time.wait(2000)
     
     @staticmethod
-    def show_battle_status(team, monster):
-        DisplaySystem.clear_screen()
+    def show_battle_status(team, monster, background_override=None, extra_draw=None):
+        DisplaySystem.clear_screen(background_override, extra_draw)
         font = pygame.font.Font(None, 24)
 
         # 顯示隊伍狀態

@@ -18,10 +18,15 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 screen = pygame.display.set_mode((1200, 700))
-image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
-imafe_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
+image_v = pygame.image.load("vectory.jpg")
+imafe_b = pygame.image.load("battle.jpg")
+image_c1 = pygame.image.load("cat1.jpg")
+image_boss = pygame.image.load("boss.jpg")
 vectory = pygame.transform.scale(image_v, (1200, 700))
 battle = pygame.transform.scale(imafe_b, (1200, 700))
+cat1 = pygame.transform.scale(image_c1, (200, 200))  # 縮小貓咪圖片
+boss = pygame.transform.scale(image_boss, (200, 200))  # 縮小boss圖片
+
 
 class Monster:
     def __init__(self, hp, attack, element=None, skills=None, behavior=None, round_number=1):
@@ -199,21 +204,39 @@ class Battle:
 
     def start(self):
         while True:
+            # battle.jpg 背景持續顯示
             screen.blit(battle, (0, 0))
+            # 貓咪與boss往左上移一點
+            cat_x, cat_y = 600, 400
+            boss_x, boss_y = cat_x + 300, cat_y - 200
+            screen.blit(cat1, (cat_x, cat_y))
+            screen.blit(boss, (boss_x, boss_y))
             pygame.display.flip()
-            DisplaySystem.clear_screen()
-            DisplaySystem.show_battle_status(self.team, self.monster)
+            DisplaySystem.show_battle_status(
+                self.team,
+                self.monster,
+                background_override=battle,
+                extra_draw=lambda: (screen.blit(cat1, (cat_x, cat_y)), screen.blit(boss, (boss_x, boss_y)))
+            )
 
             for idx, member in enumerate(self.team.members):
                 if not member.is_alive():
                     continue
 
                 while True:
-                    DisplaySystem.clear_screen()
-                    DisplaySystem.show_battle_status(self.team, self.monster)
-                    font = pygame.font.Font(None, 24)  # 調整字體大小
+                    screen.blit(battle, (0, 0))
+                    screen.blit(cat1, (cat_x, cat_y))
+                    screen.blit(boss, (boss_x, boss_y))
+                    pygame.display.flip()
+                    DisplaySystem.show_battle_status(
+                        self.team,
+                        self.monster,
+                        background_override=battle,
+                        extra_draw=lambda: (screen.blit(cat1, (cat_x, cat_y)), screen.blit(boss, (boss_x, boss_y)))
+                    )
+                    font = pygame.font.Font(None, 24)
                     text_surface = font.render(f"{member.name}'s Turn (HP: {member.hp}/{member.max_hp}, MP: {member.mp}/{member.max_mp})", True, BLACK)
-                    text_rect = text_surface.get_rect(topleft=(50, 270))  # 調整位置
+                    text_rect = text_surface.get_rect(topleft=(50, 270))
                     screen.blit(text_surface, text_rect)
                     options = [
                         "1. Normal Attack",
@@ -371,13 +394,29 @@ class Battle:
                         DisplaySystem.show_message("Invalid choice. Please select a valid option.")
 
                 if self.monster.hp <= 0:
-                    screen.blit(vectory, (0, 0))
-                    pygame.display.flip()
+                    # 先清除畫面
+                    DisplaySystem.clear_screen()
+                    # 持續顯示勝利畫面直到玩家操作
+                    waiting = True
+                    while waiting:
+                        screen.blit(vectory, (0, 0))
+                        pygame.display.flip()
+                        # 可選：顯示獎勵訊息
+                        font = pygame.font.Font(None, 48)
+
+                        for event in pygame.event.get():
+                            if event.type == pygame.QUIT:
+                                pygame.quit()
+                                exit()
+                            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                                waiting = False
                     exp_reward = 1000
                     coin_reward = 100
-                    DisplaySystem.show_message(f"Rewards: {exp_reward} EXP, {coin_reward} Coins"
-                                               f"Victory! The monster has been defeated.")
-                    screen.blit(vectory, (0, 0))
+                    text_surface = font.render("Victory! The monster has been defeated.", True, GREEN)
+                    screen.blit(text_surface, (100, 100))
+                    reward_surface = font.render("Rewards: 1000 EXP, 100 Coins", True, BLUE)
+                    screen.blit(reward_surface, (100, 180))
+                    pygame.display.flip()
                     self.team.add_exp(exp_reward)
                     self.team.add_coin(coin_reward)
                     return
