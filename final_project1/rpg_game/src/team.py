@@ -1,4 +1,6 @@
-
+import pygame
+image_s = pygame.image.load("store.jpg")
+store = pygame.transform.scale(image_s, (1200, 700))
 class Team:
     def __init__(self):
         from rpg_game.src.backpack import Backpack  # 動態匯入
@@ -18,7 +20,7 @@ class Team:
         from rpg_game.src.display import DisplaySystem  # 動態匯入
         if self.coin >= amount:
             self.coin -= amount
-            DisplaySystem.show_message(f"Spent {amount} coins. Remaining coins: {self.coin}")
+            DisplaySystem.show_message(f"Spent {amount} coins. Remaining coins: {self.coin}",background=store)
         else:
             DisplaySystem.show_message("Not enough coins.")
 

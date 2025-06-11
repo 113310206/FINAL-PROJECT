@@ -15,16 +15,28 @@ class Skill:
         self.damage = damage
         self.desc = desc
 
-    def use(self, user, target):
+    def use(self, user, target, background=None, extra_draw=None):
         from rpg_game.src.display import DisplaySystem
         if user.mp < self.cost:
-            DisplaySystem.show_message(f"{user.name} does not have enough MP to use {self.name}.")
+            DisplaySystem.show_message(
+                f"{user.name} does not have enough MP to use {self.name}.",
+                background=background,
+                extra_draw=extra_draw
+            )
             return False
         user.mp -= self.cost
         if is_teammate(user, target):
-            DisplaySystem.show_message(f"{target.name} has been supported by {self.name}!")
+            DisplaySystem.show_message(
+                f"{target.name} has been supported by {self.name}!",
+                background=background,
+                extra_draw=extra_draw
+            )
         else:
-            DisplaySystem.show_message(f"{target.name} takes {self.damage} damage from {self.name}!")
+            DisplaySystem.show_message(
+                f"{target.name} takes {self.damage} damage from {self.name}!",
+                background=background,
+                extra_draw=extra_draw
+            )
             target.hp -= self.damage
         return True
 
@@ -38,32 +50,68 @@ class ElementalSkill(Skill):
         super().__init__(name, cost, damage, desc)
         self.element = element
 
-    def use(self, user, target):
+    def use(self, user, target, background=None, extra_draw=None):
         from rpg_game.src.display import DisplaySystem
+        import pygame
         if user.mp < self.cost:
-            DisplaySystem.show_message(f"{user.name} does not have enough MP to use {self.name}.")
+            DisplaySystem.show_message(
+                f"{user.name} does not have enough MP to use {self.name}.",
+                background=background,
+                extra_draw=extra_draw
+            )
             return False
         user.mp -= self.cost
 
-        # 僅攻擊怪物（target 沒有 team 屬性或 team 為 None）
         if not hasattr(target, "team") or getattr(target, "team", None) is None:
-            # 判斷元素相剋加成（以技能的元素 self.element 為攻擊屬性）
             total_damage = self.damage
             skill_elem = self.element
             target_elem = getattr(target, "element", None)
+            adv_msg = None
             if skill_elem in ELEMENTS and target_elem in ELEMENTS:
                 if ELEMENT_ADVANTAGE.get((skill_elem, target_elem), False):
                     total_damage *= 2
-                    DisplaySystem.show_message("Elemental advantage! Damage doubled!")
+                    adv_msg = "Elemental advantage! Damage doubled!"
             target.hp -= total_damage
-            DisplaySystem.show_message(
-                f"{user.name} used {self.name} on {getattr(target, 'name', 'Monster')}! Dealt {total_damage} damage.\n"
+            # 先顯示多行訊息
+            DisplaySystem.clear_screen(background, extra_draw)
+            font = pygame.font.Font(None, 32)
+            lines = []
+            if adv_msg:
+                lines.append(adv_msg)
+            lines.extend([
+                f"{user.name} used {self.name} on {getattr(target, 'name', 'Monster')}!",
+                f"Dealt {total_damage} damage.",
                 f"MP remaining: {user.mp}/{user.max_mp}"
-            )
+            ])
+            screen = pygame.display.get_surface()
+            for i, line in enumerate(lines):
+                text_surface = font.render(line, True, (0, 0, 0))
+                text_rect = text_surface.get_rect(center=(400, 220 + i * 40))
+                screen.blit(text_surface, text_rect)
+            pygame.display.flip()
+            # 播放音效
+            try:
+                pygame.mixer.init()
+                pygame.mixer.music.load("open.mp3")
+                pygame.mixer.music.play()
+                pygame.time.wait(4000)
+            except Exception:
+                pass
+            try:
+                pygame.mixer.music.load("hurt.mp3")
+                pygame.mixer.music.play()
+                pygame.time.wait(1000)
+                pygame.mixer.music.stop()
+            except Exception:
+                pass
+            pygame.time.wait(1200)
+            # 自動切畫面（不等待玩家操作）
+            return True
         else:
-            # 對隊友時不做任何事
             DisplaySystem.show_message(
-                f"{self.name} can only be used to attack monsters!"
+                f"{self.name} can only be used to attack monsters!",
+                background=background,
+                extra_draw=extra_draw
             )
         return True
 
@@ -74,15 +122,17 @@ class SupportElementalSkill(Skill):
         super().__init__(name, cost, 0, desc)
         self.element = element
 
-    def use(self, user, target):
+    def use(self, user, target, background=None, extra_draw=None):
         from rpg_game.src.display import DisplaySystem
         if user.mp < self.cost:
-            DisplaySystem.show_message(f"{user.name} does not have enough MP to use {self.name}.")
+            DisplaySystem.show_message(
+                f"{user.name} does not have enough MP to use {self.name}.",
+                background=background,
+                extra_draw=extra_draw
+            )
             return False
         user.mp -= self.cost
         if is_teammate(user, target):
-            # 只進行加成，不覆蓋元素屬性
-            # 如果施加者與被施加者同元素，效果加倍
             if getattr(user, "element", None) == getattr(target, "element", None):
                 if hasattr(target, "apply_status_effect"):
                     target.apply_status_effect("Attack Boost", 1)
@@ -90,15 +140,23 @@ class SupportElementalSkill(Skill):
                     target.element_boost = True
                 DisplaySystem.show_message(
                     f"Synergy! {user.name} and {target.name} have the same element! Effect doubled!\n"
-                    f"{target.name}'s attack power is doubled for the next turn!"
+                    f"{target.name}'s attack power is doubled for the next turn!",
+                    background=background,
+                    extra_draw=extra_draw
                 )
             old_elem = getattr(target, "element", None)
             target.element_boost = True
             DisplaySystem.show_message(
-                f"{target.name}'s element remains {old_elem} and received an element boost!"
+                f"{target.name}'s element remains {old_elem} and received an element boost!",
+                background=background,
+                extra_draw=extra_draw
             )
             return True
         else:
-            DisplaySystem.show_message(f"{self.name} 只能對隊友使用！")
+            DisplaySystem.show_message(
+                f"{self.name} 只能對隊友使用！",
+                background=background,
+                extra_draw=extra_draw
+            )
             return False
 

@@ -2,7 +2,10 @@ import os
 import time
 import pygame
 # 初始化 pygame
-pygame.init()
+if not pygame.get_init():
+    pygame.init()
+if not pygame.display.get_init():
+    pygame.display.init()
 screen = pygame.display.set_mode((1200, 700))
 pygame.display.set_caption("RPG Game GUI")
 
@@ -13,11 +16,19 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 
 screen = pygame.display.set_mode((1200, 700))
-image = pygame.image.load("C:/CODing\PYTHON/final_project1/background.jpg")
-image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
-image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
-image_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
-background = pygame.transform.scale(image, (1200, 700))
+image_link = pygame.image.load("link.jpg")  # 進入畫面
+image_s = pygame.image.load("store.jpg")
+image_v = pygame.image.load("vectory.jpg")
+image_b = pygame.image.load("battle.jpg")
+image_bg = pygame.image.load("background.jpg")  # 主畫面背景
+image_backpack = pygame.image.load("backpack.jpg")  # 背包畫面
+image_team = pygame.image.load("team.jpg")  # Team Management 畫面
+image_upgrade = pygame.image.load("upgrade.jpg")  # 升級系統畫面
+background = pygame.transform.scale(image_bg, (1200, 700))  # 主畫面設為 ground.jpg
+backpack_bg = pygame.transform.scale(image_backpack, (1200, 700))
+team_bg = pygame.transform.scale(image_team, (1200, 700))
+# 將 upgrade_bg 調整為右側顯示
+upgrade_bg = pygame.transform.scale(image_upgrade, (800, 550))
 store = pygame.transform.scale(image_s, (1200, 700))
 vectory = pygame.transform.scale(image_v, (1200, 700))
 battle = pygame.transform.scale(image_b, (1200, 700))
@@ -34,26 +45,14 @@ class DisplaySystem:
         pygame.display.flip()
 
     @staticmethod
-    def show_message(message, color=BLACK, wait_time=0):
-        DisplaySystem.clear_screen()
+    def show_message(message, color=BLACK, wait_time=0, background=None, extra_draw=None):
+        # 僅顯示訊息與背景，不自動撥放音效、不自動跳畫面
+        DisplaySystem.clear_screen(background, extra_draw)
         font = pygame.font.Font(None, 36)
         text_surface = font.render(message, True, color)
         text_rect = text_surface.get_rect(center=(400, 300))
         screen.blit(text_surface, text_rect)
         pygame.display.flip()
-
-        if wait_time and wait_time > 0:
-            pygame.time.wait(wait_time)
-        else:
-            # 等待玩家點擊或按任意鍵繼續
-            waiting = True
-            while waiting:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        pygame.quit()
-                        exit()
-                    elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                        waiting = False
 
     @staticmethod
     def show_character(character):
@@ -100,49 +99,155 @@ class DisplaySystem:
         DisplaySystem.show_character(monster)
 
     @staticmethod
-    def show_attack_message(attacker, target, damage, crit=False, element_boost=False, skill_boost=False):
-        message = f"{attacker.name} attacked {target.name}, dealing {damage} damage!"
+    def show_attack_message(attacker, target, damage, crit=False, element_boost=False, skill_boost=False, background=None, extra_draw=None):
+        import pygame  # 修正 UnboundLocalError
+        # 若未指定 extra_draw，預設同時顯示 cat_open/boss1 疊加在畫面
+        if extra_draw is None:
+            def extra_draw():
+                try:
+                    import sys
+                    main_mod = sys.modules.get("__main__")
+                    # 先顯示 battle 選單用的 cat1/boss
+                    if main_mod and hasattr(main_mod, "cat1") and hasattr(main_mod, "boss") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat1, (450, 400))
+                        main_mod.screen.blit(main_mod.boss, (850, 300))
+                    # 疊加顯示 cat_open/boss1
+                    if main_mod and hasattr(main_mod, "cat_open") and hasattr(main_mod, "boss1") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat_open, (450, 400))
+                        main_mod.screen.blit(main_mod.boss1, (850, 300))
+                except Exception:
+                    pass
+        # 統一顯示與音效邏輯
+        # 組合多行訊息
+        lines = [
+            f"{attacker.name} attacked {target.name if target else 'All'}!",
+            f"Dealt {damage} damage."
+        ]
         if crit:
-            message += " [Critical Hit!]"
+            lines.append("[Critical Hit!]")
         if element_boost:
-            message += " [Element Advantage!]"
+            lines.append("[Element Advantage!]")
         if skill_boost:
-            message += " [Skill Boost!]"      
-        DisplaySystem.show_message(message)
+            lines.append("[Skill Boost!]")
+        # 先顯示畫面
+        DisplaySystem.clear_screen(background, extra_draw)
+        font = pygame.font.Font(None, 32)
+        screen_obj = pygame.display.get_surface()
+        for i, line in enumerate(lines):
+            text_surface = font.render(line, True, BLACK)
+            text_rect = text_surface.get_rect(center=(400, 250 + i * 40))
+            screen_obj.blit(text_surface, text_rect)
+        pygame.display.flip()
+        # 播放音效
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("open.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(4000)
+        except Exception:
+            pass
+        try:
+            pygame.mixer.music.load("hurt.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(1000)
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
 
     @staticmethod
-    def show_monster_attack_message(monster, target, damage, crit=False, element_boost=False):
-        if target:
-            message = f"{monster.name} attacked {target.name}, dealing {damage} damage!"
-        else:
-            message = f"{monster.name} performed a group attack, dealing {damage} damage to all members!"
-        if crit:
-            message += " [Critical Hit!]"
-        if element_boost:
-            message += " [Element Advantage!]"
-        DisplaySystem.show_message(message)
-
-    @staticmethod
-    def show_skill_use(user, skill, target, damage, crit=False, element_boost=False):
+    def show_skill_use(user, skill, target, damage, crit=False, element_boost=False, background=None, extra_draw=None):
+        import pygame  # 修正 UnboundLocalError
+        if extra_draw is None:
+            def extra_draw():
+                try:
+                    import sys
+                    main_mod = sys.modules.get("__main__")
+                    if main_mod and hasattr(main_mod, "cat1") and hasattr(main_mod, "boss") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat1, (450, 400))
+                        main_mod.screen.blit(main_mod.boss, (850, 300))
+                    if main_mod and hasattr(main_mod, "cat_open") and hasattr(main_mod, "boss1") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat_open, (450, 400))
+                        main_mod.screen.blit(main_mod.boss1, (850, 300))
+                except Exception:
+                    pass
+        # 統一顯示與音效邏輯
         message = f"{user.name} used {skill.name}! {skill.desc}\nDealt {damage} damage to {target.name}!"
         if crit:
             message += " [Critical Hit!]"
         if element_boost:
             message += " [Element Boost!]"
-        DisplaySystem.show_message(message)
+        DisplaySystem.clear_screen(background, extra_draw)
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(message, True, BLACK)
+        text_rect = text_surface.get_rect(center=(400, 300))
+        screen.blit(text_surface, text_rect)
+        pygame.display.flip()
+        # 自動播放 open.mp3
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("open.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(4000)
+        except Exception:
+            pass
+        # 自動播放 hurt.mp3
+        try:
+            pygame.mixer.music.load("hurt.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(1000)
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
 
     @staticmethod
-    def show_elementSkill_use(user, skill, target, damage, crit=False, element_boost=False):
-        message = f"{user.name} used {skill.name} ({skill.element})! {skill.desc}\nDealt {damage} damage to {target.name}!"
+    def show_elementSkill_use(user, skill, target, damage, crit=False, element_boost=False, background=None, extra_draw=None):
+        import pygame  # 修正 UnboundLocalError
+        if extra_draw is None:
+            def extra_draw():
+                try:
+                    import sys
+                    main_mod = sys.modules.get("__main__")
+                    if main_mod and hasattr(main_mod, "cat1") and hasattr(main_mod, "boss") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat1, (450, 400))
+                        main_mod.screen.blit(main_mod.boss, (850, 300))
+                    if main_mod and hasattr(main_mod, "cat_open") and hasattr(main_mod, "boss1") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat_open, (450, 400))
+                        main_mod.screen.blit(main_mod.boss1, (850, 300))
+                except Exception:
+                    pass
+        # 統一顯示與音效邏輯
+        message = f"{user.name} used {skill.name}! {skill.desc}\nDealt {damage} damage to {target.name}!"
         if crit:
             message += " [Critical Hit!]"
         if element_boost:
             message += " [Element Boost!]"
-        DisplaySystem.show_message(message)
+        DisplaySystem.clear_screen(background, extra_draw)
+        font = pygame.font.Font(None, 36)
+        text_surface = font.render(message, True, BLACK)
+        text_rect = text_surface.get_rect(center=(400, 300))
+        screen.blit(text_surface, text_rect)
+        pygame.display.flip()
+        # 自動播放 open.mp3
+        try:
+            pygame.mixer.init()
+            pygame.mixer.music.load("open.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(4000)
+        except Exception:
+            pass
+        # 自動播放 hurt.mp3
+        try:
+            pygame.mixer.music.load("hurt.mp3")
+            pygame.mixer.music.play()
+            pygame.time.wait(1000)
+            pygame.mixer.music.stop()
+        except Exception:
+            pass
 
     @staticmethod
     def show_main_menu():
-        DisplaySystem.clear_screen()
+        # 顯示主畫面背景
+        DisplaySystem.clear_screen(background)
         font = pygame.font.Font(None, 36)
         options = [
             "1. Show Team",
@@ -155,8 +260,8 @@ class DisplaySystem:
         ]
         buttons = []
         for i, option in enumerate(options):
-            text_surface = font.render(option, True, BLACK)
-            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
+            text_surface = font.render(option, True, WHITE)
+            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 40))
             screen.blit(text_surface, text_rect)
             buttons.append((text_rect, option))
         pygame.display.flip()
@@ -274,257 +379,16 @@ class DisplaySystem:
     @staticmethod
     def show_team_menu(team):
         from rpg_game.src.character import Character  # 確保匯入 Character 類型
-        DisplaySystem.clear_screen()
-        font = pygame.font.Font(None, 36)
-        options = [
-            "1. View Team",
-            "2. View Positions",
-            "3. Change Position",
-            "4. Fire Member",
-            "5. Add Member",
-            "6. Return to Main Menu"
-        ]
-        buttons = []
-        for i, option in enumerate(options):
-            text_surface = font.render(option, True, BLACK)
-            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
-            screen.blit(text_surface, text_rect)
-            buttons.append((text_rect, option))
-        pygame.display.flip()
-
-        action = DisplaySystem.handle_click(buttons)
-        if action == "1. View Team":
-            DisplaySystem.show_team(team)
-        elif action == "2. View Positions":
-            DisplaySystem.show_message("\n".join([f"{member.name}: {member.position}" for member in team.members]))
-        elif action == "3. Change Position":
-            DisplaySystem.show_message("Enter member name and new position (front/mid/back).")
-            # 顯示隊伍成員
-            buttons = []
-            for idx, member in enumerate(team.members):
-                text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
-                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                screen.blit(text_surface, text_rect)
-                buttons.append((text_rect, member))
-            pygame.display.flip()
-            selected_member = DisplaySystem.handle_click(buttons)
-            if selected_member:
-                DisplaySystem.show_message("Choose position: front, mid, back.")
-                pos_buttons = [
-                    (pygame.Rect(50, 50, 200, 50), "front"),
-                    (pygame.Rect(50, 100, 200, 50), "mid"),
-                    (pygame.Rect(50, 150, 200, 50), "back")
-                ]
-                for rect, label in pos_buttons:
-                    text_surface = font.render(label, True, BLACK)
-                    screen.blit(text_surface, rect.topleft)
-                pygame.display.flip()
-                new_position = DisplaySystem.handle_click(pos_buttons)
-                if new_position:
-                    team.change_position(selected_member.name, new_position)
-        elif action == "4. Fire Member":
-            DisplaySystem.show_message("Select a member to fire.")
-            buttons = []
-            for idx, member in enumerate(team.members):
-                text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
-                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                screen.blit(text_surface, text_rect)
-                buttons.append((text_rect, member))
-            pygame.display.flip()
-            selected_member = DisplaySystem.handle_click(buttons)
-            if selected_member:
-                team.fire(selected_member.name)
-        elif action == "5. Add Member":
-            DisplaySystem.show_message("Select a character from the backpack to add.")
-            if not team.backpack.items:
-                DisplaySystem.show_message("The backpack is empty. No characters available to add.")
-                return
-            buttons = []
-            for idx, (item_name, data) in enumerate(team.backpack.items.items()):
-                if isinstance(data['item'], Character):
-                    text_surface = font.render(f"{idx + 1}. {item_name}", True, BLACK)
-                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                    screen.blit(text_surface, text_rect)
-                    buttons.append((text_rect, data['item']))
-            pygame.display.flip()
-            selected_character = DisplaySystem.handle_click(buttons)
-            if selected_character:
-                team.add_member(selected_character)
-        elif action == "6. Return to Main Menu":
-            return
-
-    @staticmethod
-    def upgrade_menu(team):
-        from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
-        DisplaySystem.clear_screen()
-        font = pygame.font.Font(None, 36)
-        options = [
-            "1. Upgrade Character Level",
-            "2. Enhance Character Attributes",
-            "3. Upgrade Equipment",
-            "4. Return to Main Menu"
-        ]
-        buttons = []
-        for i, option in enumerate(options):
-            text_surface = font.render(option, True, BLACK)
-            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
-            screen.blit(text_surface, text_rect)
-            buttons.append((text_rect, option))
-        pygame.display.flip()
-
-        action = DisplaySystem.handle_click(buttons)
-        if action == "1. Upgrade Character Level":
-            DisplaySystem.show_message("Select a character to upgrade.")
-            buttons = []
-            for idx, member in enumerate(team.members):
-                text_surface = font.render(f"{idx + 1}. {member.name} (Lv.{member.level})", True, BLACK)
-                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                screen.blit(text_surface, text_rect)
-                buttons.append((text_rect, member))
-            pygame.display.flip()
-            selected_member = DisplaySystem.handle_click(buttons)
-            if selected_member:
-                # 延遲匯入 UpgradeSystem
-                from rpg_game.src.UpgradeSystem import UpgradeSystem
-                UpgradeSystem.level_up(team, selected_member)
-        elif action == "2. Enhance Character Attributes":
-            DisplaySystem.show_message("Select a character to enhance attributes.")
-            buttons = []
-            for idx, member in enumerate(team.members):
-                text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
-                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                screen.blit(text_surface, text_rect)
-                buttons.append((text_rect, member))
-            pygame.display.flip()
-            selected_member = DisplaySystem.handle_click(buttons)
-            if selected_member:
-                DisplaySystem.show_message("Choose an attribute to enhance: STR, VIT, AGL, DEX, INT.")
-                attr_buttons = [
-                    (pygame.Rect(50, 50, 200, 50), "STR"),
-                    (pygame.Rect(50, 100, 200, 50), "VIT"),
-                    (pygame.Rect(50, 150, 200, 50), "AGL"),
-                    (pygame.Rect(50, 200, 200, 50), "DEX"),
-                    (pygame.Rect(50, 250, 200, 50), "INT")
-                ]
-                for rect, label in attr_buttons:
-                    text_surface = font.render(label, True, BLACK)
-                    screen.blit(text_surface, rect.topleft)
-                pygame.display.flip()
-                selected_attr = DisplaySystem.handle_click(attr_buttons)
-                if selected_attr:
-                    # 延遲匯入 UpgradeSystem
-                    from rpg_game.src.UpgradeSystem import UpgradeSystem
-                    UpgradeSystem.upgrade_attribute(team, selected_member, selected_attr.lower())
-        elif action == "3. Upgrade Equipment":
-            if not team.backpack.items:
-                DisplaySystem.show_message("The backpack is empty. No equipment available to upgrade.")
-                
-                return
-
-            DisplaySystem.show_message("Select equipment to upgrade.")
-            buttons = []
-            for idx, (item_name, data) in enumerate(team.backpack.items.items()):
-                if isinstance(data['item'], Equipment):
-                    text_surface = font.render(f"{idx + 1}. {item_name} (Lv.{data['item'].level})", True, BLACK)
-                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                    screen.blit(text_surface, text_rect)
-                    buttons.append((text_rect, data['item']))
-            pygame.display.flip()
-            selected_equipment = DisplaySystem.handle_click(buttons)
-            if selected_equipment:
-                # 延遲匯入 UpgradeSystem
-                from rpg_game.src.UpgradeSystem import UpgradeSystem
-                UpgradeSystem.upgrade_equipment(team, selected_equipment)
-        elif action == "4. Return to Main Menu":
-            return
-
-
-
-    @staticmethod
-    def team_menu(team):
-        from rpg_game.src.display import DisplaySystem  # 確保顯示功能可用
-        from rpg_game.src.character import Character  # 確保匯入 Character 類型
         while True:
-            DisplaySystem.show_team_menu()  # 顯示 Team Management 選單
-            choice = input("Choose an option: ").strip()
-            if choice == "1":  # View Team
-                DisplaySystem.show_team(team, pause=True)
-            elif choice == "2":  # View Positions
-                team.show_positions()
-                input("（按 Enter 繼續）")
-            elif choice == "3":  # Change Position
-                try:
-                    name = input("Enter member name: ").strip()
-                    pos = input("Enter new position (front/mid/back): ").strip().lower()
-                    if pos not in ["front", "mid", "back"]:
-                        print("Invalid position. Please enter 'front', 'mid', or 'back'.")
-                        continue
-                    team.change_position(name, pos)
-                    print(f"{name}'s position changed to {pos}.")
-                except Exception as e:
-                    print(f"Error: {e}")
-                input("（按 Enter 繼續）")
-            elif choice == "4":  # Fire Member
-                try:
-                    name = input("Enter member name to fire: ").strip()
-                    team.fire(name)
-                    print(f"{name} has been removed from the team.")
-                except Exception as e:
-                    print(f"Error: {e}")
-                input("（按 Enter 繼續）")
-            elif choice == "5":  # Add Member
-                if not team.backpack.items:
-                    print("The backpack is empty. No members available to add.")
-                    input("（按 Enter 繼續）")
-                    continue
-                try:
-                    DisplaySystem.show_backpack(team.backpack)
-                    try:
-                        item_idx = int(input("Enter the item number to add as a member: ")) - 1
-                    except ValueError:
-                        print("Invalid input. Please enter a valid number.")
-                        input("（按 Enter 繼續）")
-                        continue
-                    if 0 <= item_idx < len(team.backpack.items):
-                        item_name = list(team.backpack.items.keys())[item_idx]
-                        character = team.backpack.items[item_name]['item']
-                        if not isinstance(character, Character):
-                            print("Selected item is not a character.")
-                            input("（按 Enter 繼續）")
-                            continue
-                        if len(team.members) < 4:
-                            team.add_member(character)
-                            team.backpack.remove_item(item_name, 1)
-                            print(f"{character.name} has been added to the team.")
-                        else:
-                            print("The team is full. Cannot add more members.")
-                    else:
-                        print("Invalid item selection. Please try again.")
-                except Exception as e:
-                    print(f"Error: {e}")
-                input("（按 Enter 繼續）")
-            elif choice == "6":  # Return to Main Menu
-                break
-            else:
-                print("Invalid choice. Please enter a number between 1 and 6.")
-                input("（按 Enter 繼續）")
-
-    @staticmethod
-    def store(team):
-        from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment  # 確保匯入 Gacha 函數
-        screen.blit(store, (0, 0))  # 使用背景圖片
-        pygame.display.flip()
-        while True:
-
+            DisplaySystem.clear_screen(team_bg)
             font = pygame.font.Font(None, 36)
             options = [
-                "1. Increase STR (50 coins)",
-                "2. Increase VIT (50 coins)",
-                "3. Increase AGL (50 coins)",
-                "4. Increase DEX (50 coins)",
-                "5. Increase INT (50 coins)",
-                "6. Exit Store",
-                "7. Gacha Draw (200 coins)"
+                "1. View Team",
+                "2. View Positions",
+                "3. Change Position",
+                "4. Fire Member",
+                "5. Add Member",
+                "6. Return to Main Menu"
             ]
             buttons = []
             for i, option in enumerate(options):
@@ -535,7 +399,105 @@ class DisplaySystem:
             pygame.display.flip()
 
             action = DisplaySystem.handle_click(buttons)
-            if action == "6. Exit Store":
+            if action == "1. View Team":
+                DisplaySystem.show_team(team)
+            elif action == "2. View Positions":
+                DisplaySystem.show_message("\n".join([f"{member.name}: {member.position}" for member in team.members]), background=team_bg)
+            elif action == "3. Change Position":
+                DisplaySystem.show_message("Enter member name and new position (front/mid/back).", background=team_bg)
+                # 顯示隊伍成員
+                buttons2 = []
+                for idx, member in enumerate(team.members):
+                    text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
+                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                    screen.blit(text_surface, text_rect)
+                    buttons2.append((text_rect, member))
+                pygame.display.flip()
+                selected_member = DisplaySystem.handle_click(buttons2)
+                if selected_member:
+                    DisplaySystem.show_message("Choose position: front, mid, back.", background=team_bg)
+                    pos_buttons = [
+                        (pygame.Rect(50, 50, 200, 50), "front"),
+                        (pygame.Rect(50, 100, 200, 50), "mid"),
+                        (pygame.Rect(50, 150, 200, 50), "back")
+                    ]
+                    for rect, label in pos_buttons:
+                        text_surface = font.render(label, True, BLACK)
+                        screen.blit(text_surface, rect.topleft)
+                    pygame.display.flip()
+                    new_position = DisplaySystem.handle_click(pos_buttons)
+                    if new_position:
+                        team.change_position(selected_member.name, new_position)
+            elif action == "4. Fire Member":
+                DisplaySystem.show_message("Select a member to fire.", background=team_bg)
+                buttons2 = []
+                for idx, member in enumerate(team.members):
+                    text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
+                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                    screen.blit(text_surface, text_rect)
+                    buttons2.append((text_rect, member))
+                pygame.display.flip()
+                selected_member = DisplaySystem.handle_click(buttons2)
+                if selected_member:
+                    team.fire(selected_member.name)
+            elif action == "5. Add Member":
+                DisplaySystem.show_message("Select a character from the backpack to add.", background=team_bg)
+                if not team.backpack.items:
+                    DisplaySystem.show_message("The backpack is empty. No characters available to add.", background=team_bg)
+                    pygame.time.wait(2000)
+                    continue
+                buttons2 = []
+                for idx, (item_name, data) in enumerate(team.backpack.items.items()):
+                    if isinstance(data['item'], Character):
+                        text_surface = font.render(f"{idx + 1}. {item_name}", True, BLACK)
+                        text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                        screen.blit(text_surface, text_rect)
+                        buttons2.append((text_rect, data['item']))
+                # 加入退出按鈕
+                exit_rect = pygame.Rect(50, 50 + len(buttons2) * 50, 200, 50)
+                exit_text = font.render("Exit", True, RED)
+                screen.blit(exit_text, exit_rect.topleft)
+                buttons2.append((exit_rect, "Exit"))
+                pygame.display.flip()
+                selected_character = DisplaySystem.handle_click(buttons2)
+                if selected_character == "Exit":
+                    continue
+                if selected_character:
+                    team.add_member(selected_character)
+            elif action == "6. Return to Main Menu":
+                return
+
+    @staticmethod
+    def store(team):
+        from rpg_game.src.store import gacha_draw_character, gacha_draw_equipment
+        # 進入商店時顯示 store.jpg
+        DisplaySystem.clear_screen(store)
+        pygame.display.flip()
+        font = pygame.font.Font(None, 36)
+        while True:
+            DisplaySystem.clear_screen(store)
+            options = [
+                "1. Increase STR (50 coins)",
+                "2. Increase VIT (50 coins)",
+                "3. Increase AGL (50 coins)",
+                "4. Increase DEX (50 coins)",
+                "5. Increase INT (50 coins)",
+                "6. Gacha Draw (200 coins)",
+                "7. Exit Store"
+            ]
+            buttons = []
+            for i, option in enumerate(options):
+                text_surface = font.render(option, True, BLACK)
+                text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
+                screen.blit(text_surface, text_rect)
+                buttons.append((text_rect, option))
+            # 顯示目前金幣
+            coin_surface = font.render(f"Current Coins: {team.coin}", True, BLUE)
+            screen.blit(coin_surface, (800, 50))
+            pygame.display.flip()
+
+            action = DisplaySystem.handle_click(buttons)
+            if action == "7. Exit Store":
                 break
             elif action.startswith("1. Increase STR") or action.startswith("2. Increase VIT") or action.startswith("3. Increase AGL") or action.startswith("4. Increase DEX") or action.startswith("5. Increase INT"):
                 attribute_map = {
@@ -547,54 +509,83 @@ class DisplaySystem:
                 }
                 attribute = attribute_map[action]
                 if team.coin < 50:
-                    DisplaySystem.show_message("Not enough coins.", color=RED)
+                    DisplaySystem.show_message("Not enough coins.", color=RED, background=store)
+                    pygame.time.wait(1200)
                     continue
-                DisplaySystem.show_message(f"Select a member to increase {attribute.upper()}.")
-                buttons = []
+                # 先顯示選擇成員畫面
+                DisplaySystem.clear_screen(store)
+                buttons2 = []
                 for idx, member in enumerate(team.members):
                     text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
-                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                    text_rect = text_surface.get_rect(topleft=(50, 150 + idx * 50))
                     screen.blit(text_surface, text_rect)
-                    buttons.append((text_rect, member))
+                    buttons2.append((text_rect, member))
+                coin_surface = font.render(f"Current Coins: {team.coin}", True, BLUE)
+                screen.blit(coin_surface, (800, 50))
+                # 加入退出按鈕
+                exit_rect = pygame.Rect(50, 150 + len(buttons2) * 50, 200, 50)
+                exit_text = font.render("Exit", True, RED)
+                screen.blit(exit_text, exit_rect.topleft)
+                buttons2.append((exit_rect, "Exit"))
                 pygame.display.flip()
-                selected_member = DisplaySystem.handle_click(buttons)
+                selected_member = DisplaySystem.handle_click(buttons2)
+                if selected_member == "Exit":
+                    continue
                 if selected_member:
+                    DisplaySystem.clear_screen(store)
                     team.spend_coin(50)
                     setattr(selected_member, attribute, getattr(selected_member, attribute) + 1)
-                    DisplaySystem.show_message(f"{selected_member.name}'s {attribute.upper()} increased by 1!", color=GREEN)
-            elif action == "7. Gacha Draw (200 coins)":
+                    # 直接在原畫面顯示提示，不再清空畫面
+                    msg = f"{selected_member.name}'s {attribute.upper()} increased by 1!"
+                    text_surface = font.render(msg, True, GREEN)
+                    screen.blit(text_surface, (50, 500))
+                    pygame.display.flip()
+                    pygame.time.wait(1200)
+            elif action == "6. Gacha Draw (200 coins)":
                 if team.coin < 200:
-                    DisplaySystem.show_message("Not enough coins for gacha.", color=RED)
+                    DisplaySystem.show_message("Not enough coins for gacha.", color=RED, background=store)
+                    pygame.time.wait(1200)
                     continue
-                DisplaySystem.clear_screen()
-                buttons = [
-                    (pygame.Rect(50, 50, 200, 50), "Character Pool"),
-                    (pygame.Rect(50, 100, 200, 50), "Equipment Pool")
+                DisplaySystem.clear_screen(store)
+                gacha_buttons = [
+                    (pygame.Rect(50, 200, 300, 60), "Character Pool"),
+                    (pygame.Rect(400, 200, 300, 60), "Equipment Pool")
                 ]
-                for rect, label in buttons:
+                # 加入退出按鈕
+                exit_rect = pygame.Rect(50, 300, 200, 50)
+                exit_text = font.render("Exit", True, RED)
+                screen.blit(exit_text, exit_rect.topleft)
+                gacha_buttons.append((exit_rect, "Exit"))
+                for rect, label in gacha_buttons[:-1]:
                     text_surface = font.render(label, True, BLACK)
                     screen.blit(text_surface, rect.topleft)
                 pygame.display.flip()
-                pool_choice = DisplaySystem.handle_click(buttons)
+                pool_choice = DisplaySystem.handle_click(gacha_buttons)
+                if pool_choice == "Exit":
+                    continue
                 if pool_choice == "Character Pool":
                     gacha_character = gacha_draw_character()
                     team.backpack.add_item(gacha_character, 1)
-                    DisplaySystem.show_message(f"Gacha success! {gacha_character.name} added to backpack!", color=GREEN)
+                    DisplaySystem.show_message(f"Gacha success! {gacha_character.name} added to backpack!", color=GREEN, background=store)
+                    pygame.time.wait(1200)
                 elif pool_choice == "Equipment Pool":
                     gacha_equipment = gacha_draw_equipment()
                     team.backpack.add_item(gacha_equipment, 1)
-                    DisplaySystem.show_message(f"Gacha success! {gacha_equipment.name} added to backpack!", color=GREEN)
+                    DisplaySystem.show_message(f"Gacha success! {gacha_equipment.name} added to backpack!", color=GREEN, background=store)
+                    pygame.time.wait(1200)             
                 team.spend_coin(200)
+                pygame.time.wait(1200)
             else:
-                print("Invalid choice. Please enter a valid option.\n")
-                input("（按 Enter 繼續）")
+                DisplaySystem.show_message("Invalid choice. Please enter a valid option.", color=RED, background=store)
+                pygame.time.wait(1200)
+
     @staticmethod
     def backpack_menu(backpack):
         from rpg_game.src.character import Character  # 確保匯入 Character 類型
         from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
         from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
         while True:
-            DisplaySystem.clear_screen()
+            DisplaySystem.clear_screen(backpack_bg)
             font = pygame.font.Font(None, 36)
             options = [
                 "1. View Backpack",
@@ -613,11 +604,12 @@ class DisplaySystem:
             if action == "3. Return to Main Menu":
                 break
             elif action == "1. View Backpack":
-                DisplaySystem.clear_screen()
+                DisplaySystem.clear_screen(backpack_bg)
                 font = pygame.font.Font(None, 24)
                 y_offset = 50
-                if not backpack.items:  # 修正此處，直接使用 backpack.items
-                    DisplaySystem.show_message("The backpack is empty.", color=RED)
+                if not backpack.items:
+                    DisplaySystem.show_message("The backpack is empty.", color=RED, background=backpack_bg)
+                    pygame.time.wait(2000)
                     continue
                 for item_name, data in backpack.items.items():
                     item = data['item']
@@ -630,26 +622,175 @@ class DisplaySystem:
                 pygame.display.flip()
                 pygame.time.wait(2000)
             elif action == "2. Use Item":
-                if not backpack.items:  # 修正此處，直接使用 backpack.items
-                    DisplaySystem.show_message("The backpack is empty.", color=RED)
+                if not backpack.items:
+                    DisplaySystem.show_message("The backpack is empty.", color=RED, background=backpack_bg)
+                    pygame.time.wait(2000)
                     continue
-                DisplaySystem.show_message("Select an item to use.")
+                DisplaySystem.show_message("Select an item to use.", background=backpack_bg)
                 buttons = []
-                for idx, (item_name, data) in enumerate(backpack.items.items()):  # 修正此處，直接使用 backpack.items
+                for idx, (item_name, data) in enumerate(backpack.items.items()):
                     text_surface = font.render(f"{idx + 1}. {item_name} - Quantity: {data['quantity']}", True, BLACK)
                     text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
                     screen.blit(text_surface, text_rect)
                     buttons.append((text_rect, item_name))
+                # 加入退出按鈕
+                exit_rect = pygame.Rect(50, 50 + len(buttons) * 50, 200, 50)
+                exit_text = font.render("Exit", True, RED)
+                screen.blit(exit_text, exit_rect.topleft)
+                buttons.append((exit_rect, "Exit"))
                 pygame.display.flip()
                 selected_item = DisplaySystem.handle_click(buttons)
+                if selected_item == "Exit":
+                    continue
                 if selected_item:
-                    item_data = backpack.items[selected_item]  # 修正此處，直接使用 backpack.items
+                    item_data = backpack.items[selected_item]
                     item = item_data['item']
                     if isinstance(item, Character):
-                        DisplaySystem.show_message(f"Cannot use {selected_item} directly.")
+                        DisplaySystem.show_message(f"Cannot use {selected_item} directly.", background=backpack_bg)
                     elif isinstance(item, Equipment):
-                        DisplaySystem.show_message(f"Entering upgrade system for {selected_item}.")
+                        DisplaySystem.show_message(f"Entering upgrade system for {selected_item}.", background=backpack_bg)
                         DisplaySystem.upgrade_menu(backpack)
                     else:
-                        DisplaySystem.show_message(f"Using {selected_item}.")
+                        DisplaySystem.show_message(f"Using {selected_item}.", background=backpack_bg)
                         backpack.remove_item(selected_item, 1)
+
+    @staticmethod
+    def upgrade_menu(team):
+        from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
+        # 進入升級系統時先清空畫面
+        screen.fill(WHITE)
+        pygame.display.flip()
+        while True:
+            # upgrade_bg 顯示在右側一點 (x=375, y=90)
+            screen.fill(WHITE)
+            screen.blit(upgrade_bg, (375, 90))
+            pygame.display.flip()
+            font = pygame.font.Font(None, 36)
+            options = [
+                "1. Upgrade Character Level",
+                "2. Enhance Character Attributes",
+                "3. Upgrade Equipment",
+                "4. Return to Main Menu"
+            ]
+            buttons = []
+            for i, option in enumerate(options):
+                text_surface = font.render(option, True, BLACK)
+                text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
+                screen.blit(text_surface, text_rect)
+                buttons.append((text_rect, option))
+            pygame.display.flip()
+
+            action = DisplaySystem.handle_click(buttons)
+            if action == "1. Upgrade Character Level":
+                while True:
+                    screen.fill(WHITE)
+                    screen.blit(upgrade_bg, (375, 90))
+                    pygame.display.flip()
+                    DisplaySystem.show_message("Select a character to upgrade.")
+                    font = pygame.font.Font(None, 36)
+                    buttons2 = []
+                    for idx, member in enumerate(team.members):
+                        text_surface = font.render(f"{idx + 1}. {member.name} (Lv.{member.level})", True, BLACK)
+                        text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                        screen.blit(text_surface, text_rect)
+                        buttons2.append((text_rect, member))
+                    exit_rect = pygame.Rect(50, 50 + len(buttons2) * 50, 200, 50)
+                    exit_text = font.render("Exit", True, RED)
+                    screen.blit(exit_text, exit_rect.topleft)
+                    buttons2.append((exit_rect, "Exit"))
+                    pygame.display.flip()
+                    selected_member = DisplaySystem.handle_click(buttons2)
+                    if selected_member == "Exit":
+                        break
+                    if selected_member:
+                        from rpg_game.src.UpgradeSystem import UpgradeSystem
+                        UpgradeSystem.level_up(team, selected_member)
+                        break
+                continue
+            elif action == "2. Enhance Character Attributes":
+                while True:
+                    screen.fill(WHITE)
+                    screen.blit(upgrade_bg, (375, 90))
+                    pygame.display.flip()
+                    DisplaySystem.show_message("Select a character to enhance attributes.")
+                    font = pygame.font.Font(None, 36)
+                    buttons2 = []
+                    for idx, member in enumerate(team.members):
+                        text_surface = font.render(f"{idx + 1}. {member.name}", True, BLACK)
+                        text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                        screen.blit(text_surface, text_rect)
+                        buttons2.append((text_rect, member))
+                    exit_rect = pygame.Rect(50, 50 + len(buttons2) * 50, 200, 50)
+                    exit_text = font.render("Exit", True, RED)
+                    screen.blit(exit_text, exit_rect.topleft)
+                    buttons2.append((exit_rect, "Exit"))
+                    pygame.display.flip()
+                    selected_member = DisplaySystem.handle_click(buttons2)
+                    if selected_member == "Exit":
+                        break
+                    if selected_member:
+                        while True:
+                            screen.fill(WHITE)
+                            screen.blit(upgrade_bg, (375, 90))
+                            pygame.display.flip()
+                            DisplaySystem.show_message("Choose an attribute to enhance: STR, VIT, AGL, DEX, INT.")
+                            font = pygame.font.Font(None, 36)
+                            attr_buttons = [
+                                (pygame.Rect(50, 50, 200, 50), "STR"),
+                                (pygame.Rect(50, 100, 200, 50), "VIT"),
+                                (pygame.Rect(50, 150, 200, 50), "AGL"),
+                                (pygame.Rect(50, 200, 200, 50), "DEX"),
+                                (pygame.Rect(50, 250, 200, 50), "INT")
+                            ]
+                            exit_rect = pygame.Rect(50, 300, 200, 50)
+                            exit_text = font.render("Exit", True, RED)
+                            screen.blit(exit_text, exit_rect.topleft)
+                            attr_buttons.append((exit_rect, "Exit"))
+                            for rect, label in attr_buttons[:-1]:
+                                text_surface = font.render(label, True, BLACK)
+                                screen.blit(text_surface, rect.topleft)
+                            pygame.display.flip()
+                            selected_attr = DisplaySystem.handle_click(attr_buttons)
+                            if selected_attr == "Exit":
+                                break
+                            if selected_attr:
+                                from rpg_game.src.UpgradeSystem import UpgradeSystem
+                                UpgradeSystem.upgrade_attribute(team, selected_member, selected_attr.lower())
+                                break
+                        break
+                continue
+            elif action == "3. Upgrade Equipment":
+                while True:
+                    screen.fill(WHITE)
+                    screen.blit(upgrade_bg, (375, 90))
+                    pygame.display.flip()
+                    if not hasattr(team, "backpack") or not team.backpack.items:
+                        DisplaySystem.show_message("The backpack is empty. No equipment available to upgrade.")
+                        screen.blit(upgrade_bg, (375, 90))
+                        pygame.time.wait(2000)
+                        break
+
+                    DisplaySystem.show_message("Select equipment to upgrade.")
+                    font = pygame.font.Font(None, 36)
+                    buttons2 = []
+                    for idx, (item_name, data) in enumerate(team.backpack.items.items()):
+                        if isinstance(data['item'], Equipment):
+                            text_surface = font.render(f"{idx + 1}. {item_name} (Lv.{data['item'].level})", True, BLACK)
+                            text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
+                            screen.blit(text_surface, text_rect)
+                            buttons2.append((text_rect, data['item']))
+                    exit_rect = pygame.Rect(50, 50 + len(buttons2) * 50, 200, 50)
+                    exit_text = font.render("Exit", True, RED)
+                    screen.blit(exit_text, exit_rect.topleft)
+                    buttons2.append((exit_rect, "Exit"))
+                    pygame.display.flip()
+                    selected_equipment = DisplaySystem.handle_click(buttons2)
+                    if selected_equipment == "Exit":
+                        break
+                    if selected_equipment:
+                        from rpg_game.src.UpgradeSystem import UpgradeSystem
+                        UpgradeSystem.upgrade_equipment(team, selected_equipment)
+                        break
+                continue
+            elif action == "4. Return to Main Menu":
+                return

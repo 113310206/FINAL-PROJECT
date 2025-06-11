@@ -18,14 +18,18 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 screen = pygame.display.set_mode((1200, 700))
-image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
-imafe_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
-image_c1 = pygame.image.load("C:/CODing/PYTHON/final_project1/cat1.jpg")
-image_boss = pygame.image.load("C:/CODing/PYTHON/final_project1/boss.jpg")
+image_v = pygame.image.load("vectory.jpg")
+imafe_b = pygame.image.load("battle.jpg")
+image_cop = pygame.image.load("cat-open.jpg")
+image_c1 = pygame.image.load("cat1.jpg")
+image_b1 = pygame.image.load("boss1.jpg")
+image_boss = pygame.image.load("boss.jpg")
 vectory = pygame.transform.scale(image_v, (1200, 700))
 battle = pygame.transform.scale(imafe_b, (1200, 700))
 cat1 = pygame.transform.scale(image_c1, (200, 200))  # 縮小貓咪圖片
 boss = pygame.transform.scale(image_boss, (200, 200))  # 縮小boss圖片
+cat_open = pygame.transform.scale(image_cop, (200, 200))  # 縮小貓咪開啟圖片
+boss1 = pygame.transform.scale(image_b1, (200, 200))  # 縮小boss1圖片
 
 
 class Monster:
@@ -206,17 +210,13 @@ class Battle:
         while True:
             # battle.jpg 背景持續顯示
             screen.blit(battle, (0, 0))
-            # 貓咪與boss往左上移一點
-            cat_x, cat_y = 450, 400
-            boss_x, boss_y = cat_x + 400, cat_y - 100
-            screen.blit(cat1, (cat_x, cat_y))
-            screen.blit(boss, (boss_x, boss_y))
+            # 只顯示 battle 背景，不再顯示 cat1, boss
             pygame.display.flip()
             DisplaySystem.show_battle_status(
                 self.team,
                 self.monster,
                 background_override=battle,
-                extra_draw=lambda: (screen.blit(cat1, (cat_x, cat_y)), screen.blit(boss, (boss_x, boss_y)))
+                extra_draw=None  # 不再顯示 cat1, boss
             )
 
             for idx, member in enumerate(self.team.members):
@@ -224,15 +224,17 @@ class Battle:
                     continue
 
                 while True:
+                    # battle 背景持續顯示
                     screen.blit(battle, (0, 0))
-                    screen.blit(cat1, (cat_x, cat_y))
-                    screen.blit(boss, (boss_x, boss_y))
+                    # 只在選單顯示 cat1, boss
+                    screen.blit(cat1, (450, 400))
+                    screen.blit(boss, (850, 300))
                     pygame.display.flip()
                     DisplaySystem.show_battle_status(
                         self.team,
                         self.monster,
                         background_override=battle,
-                        extra_draw=lambda: (screen.blit(cat1, (cat_x, cat_y)), screen.blit(boss, (boss_x, boss_y)))
+                        extra_draw=lambda: (screen.blit(cat1, (450, 400)), screen.blit(boss, (850, 300)))
                     )
                     font = pygame.font.Font(None, 24)
                     text_surface = font.render(f"{member.name}'s Turn (HP: {member.hp}/{member.max_hp}, MP: {member.mp}/{member.max_mp})", True, BLACK)
@@ -251,40 +253,69 @@ class Battle:
                     buttons = []
                     for i, option in enumerate(options):
                         text_surface = font.render(option, True, BLACK)
-                        text_rect = text_surface.get_rect(topleft=(50, 300 + i * 30))  # 從上到下排列，間距 30
+                        text_rect = text_surface.get_rect(topleft=(50, 300 + i * 30))
                         screen.blit(text_surface, text_rect)
                         buttons.append((text_rect, option))
                     pygame.display.flip()
 
                     action = DisplaySystem.handle_click(buttons)
+                    # 執行選項後，cat open/boss1 顯示於攻擊訊息
                     if action == "1. Normal Attack":
                         crit = member.try_crit(self.monster)
                         total_damage = member.attack_power * (2 if member.element_boost else 1) * (2 if crit else 1)
-                        member.element_boost = False  # 攻击后重置加成
-                        DisplaySystem.show_attack_message(member, self.monster, total_damage, crit=crit)
+                        member.element_boost = False
+                        DisplaySystem.show_attack_message(
+                            member, self.monster, total_damage, crit=crit,
+                            background=battle,
+                            extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                        )
                         self.monster.hp -= total_damage
                         break
                     elif action == "2. Use Skill":
                         if member.skill:
                             crit = member.try_crit(self.monster)
                             total_damage = member.skill.damage * (2 if crit else 1)
-                            DisplaySystem.show_skill_use(member, member.skill, self.monster, total_damage, crit=crit)
+                            DisplaySystem.show_skill_use(
+                                member, member.skill, self.monster, total_damage, crit=crit,
+                                background=battle,
+                                extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
                             self.monster.hp -= total_damage
                         break
                     elif action == "3. Use Element Skill":
                         if member.element_skill:
-                            success = member.element_skill.use(member, self.monster)
-                            if success:
-                                # 不需再手動覆蓋元素，已由技能內部處理
-                                DisplaySystem.show_message(f"{member.name} successfully used {member.element_skill.name}!")
+                            success = member.element_skill.use(
+                                member, self.monster,
+                                background=battle,
+                                extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
+                            pygame.time.wait(1200)  # 等待技能動畫結束
+                            # 使用元素技能後自動切畫面，不再等待玩家操作
                         break
                     elif action == "4. Use Element Skill on Teammate":
                         teammates = [m for m in self.team.members if m.is_alive() and m != member]
                         if not teammates:
-                            DisplaySystem.show_message("No teammates available for support.", color=RED)
+                            DisplaySystem.show_message(
+                                "No teammates available for support.", color=RED,
+                                background=battle,
+                                extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
+                            # 等待玩家操作，避免訊息被蓋掉
+                            waiting = True
+                            while waiting:
+                                for event in pygame.event.get():
+                                    if event.type == pygame.QUIT:
+                                        pygame.quit()
+                                        exit()
+                                    elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                                        waiting = False
                             continue
 
-                        DisplaySystem.show_message("Select a teammate to use the skill on.")
+                        DisplaySystem.show_message(
+                            "Select a teammate to use the skill on.",
+                            background=battle,
+                            extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                        )
                         buttons = []
                         for i, teammate in enumerate(teammates):
                             text_surface = font.render(f"{i + 1}. {teammate.name}", True, BLACK)
@@ -295,115 +326,83 @@ class Battle:
 
                         selected_teammate = DisplaySystem.handle_click(buttons)
                         if selected_teammate:
-                            success = member.element_skill.use(member, selected_teammate)
+                            success = member.element_skill.use(
+                                member, selected_teammate,
+                                background=battle,
+                                extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
                             if success:
-                                # 不需再手動覆蓋元素，已由技能內部處理
-                                DisplaySystem.show_message(f"{member.name} successfully used {member.element_skill.name} on {selected_teammate.name}!")
+                                DisplaySystem.show_message(
+                                    f"{member.name} successfully used {member.element_skill.name} on {selected_teammate.name}!",
+                                    background=battle,
+                                    extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                                )
+                                # 等待玩家操作，避免訊息被蓋掉
+                                waiting = True
+                                while waiting:
+                                    for event in pygame.event.get():
+                                        if event.type == pygame.QUIT:
+                                            pygame.quit()
+                                            exit()
+                                        elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                                            waiting = False
                         else:
-                            DisplaySystem.show_message("Invalid teammate selection.", color=RED)
+                            DisplaySystem.show_message(
+                                "Invalid teammate selection.", color=RED,
+                                background=battle,
+                                extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
+                            # 等待玩家操作，避免訊息被蓋掉
+                            waiting = True
+                            while waiting:
+                                for event in pygame.event.get():
+                                    if event.type == pygame.QUIT:
+                                        pygame.quit()
+                                        exit()
+                                    elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                                        waiting = False
                         break
                     elif action == "5. Upgrade System":
                         DisplaySystem.upgrade_menu(self.team)
+                        # 修正：升級系統後回到選單而不是直接 break
                         continue
                     elif action == "6. Equip/Unequip":
-                        font = pygame.font.Font(None, 36)
-                        options = [
-                            "1. Equip",
-                            "2. Unequip"
-                        ]
-                        DisplaySystem.clear_screen()
-                        buttons = []
-                        for i, option in enumerate(options):
-                            text_surface = font.render(option, True, BLACK)
-                            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
-                            screen.blit(text_surface, text_rect)
-                            buttons.append((text_rect, option))
-                        pygame.display.flip()
-
-                        sub_action = DisplaySystem.handle_click(buttons)
-                        if sub_action == "1. Equip":
-                            DisplaySystem.clear_screen()
-                            if not self.team.backpack.items:
-                                DisplaySystem.show_message("Your backpack is empty. Please add items to equip.", color=RED)
-                                # 只要點擊任意地方就退出
-                                waiting = True
-                                while waiting:
-                                    for event in pygame.event.get():
-                                        if event.type == pygame.QUIT:
-                                            pygame.quit()
-                                            exit()
-                                        elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
-                                            waiting = False
-                                break  # 直接退出 equip 流程
-                            DisplaySystem.show_backpack(self.team.backpack, pause=False)
-                            buttons = []
-                            for idx, (item_name, data) in enumerate(self.team.backpack.items.items()):
-                                item = data['item']
-                                text_surface = font.render(f"{idx + 1}. {item_name} (Lv.{item.level})", True, BLACK)
-                                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 50))
-                                screen.blit(text_surface, text_rect)
-                                buttons.append((text_rect, item))
-                            pygame.display.flip()
-
-                            selected_item = DisplaySystem.handle_click(buttons)
-                            if selected_item and isinstance(selected_item, Equipment):
-                                member.equip(selected_item, self.team.backpack)  # 傳入 team.backpack
-                            else:
-                                DisplaySystem.show_message("Invalid selection. Please choose a valid equipment.", color=RED)
-
-                        elif sub_action == "2. Unequip":
-                            DisplaySystem.clear_screen()
-                            # 修正：如果沒有任何裝備，直接顯示訊息並等待點擊退出
-                            if all(eq is None for eq in member.equipment.values()):
-                                DisplaySystem.show_message("No equipment to unequip.", color=RED)
-                                waiting = True
-                                while waiting:
-                                    for event in pygame.event.get():
-                                        if event.type == pygame.QUIT:
-                                            pygame.quit()
-                                            exit()
-                                        elif event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.KEYDOWN:
-                                            waiting = False
-                                break  # 直接退出 unequip 流程
-                            buttons = []
-                            for eq_type, eq in member.equipment.items():
-                                if eq:
-                                    text_surface = font.render(f"{eq_type.capitalize()}: {eq.name} (Lv.{eq.level})", True, BLACK)
-                                    text_rect = text_surface.get_rect(topleft=(50, 50 + len(buttons) * 50))
-                                    screen.blit(text_surface, text_rect)
-                                    buttons.append((text_rect, eq_type))
-                            pygame.display.flip()
-
-                            selected_eq_type = DisplaySystem.handle_click(buttons)
-                            if selected_eq_type and member.equipment.get(selected_eq_type):
-                                member.unequip(selected_eq_type, self.team.backpack)  # 傳入 team.backpack
-                                DisplaySystem.show_message(f"{member.name} unequipped {selected_eq_type.capitalize()}!", color=GREEN)
-                            else:
-                                DisplaySystem.show_message("Invalid selection. No equipment to unequip.", color=RED)
-
-                        else:
-                            DisplaySystem.show_message("Invalid choice. Please select 1 or 2.", color=RED)
-                        continue  # 不消耗回合，保持角色動作
+                        # ...existing code...
+                        # 修正：裝備系統後回到選單而不是直接 break
+                        continue
                     elif action == "7. View Backpack":
-                        DisplaySystem.backpack_menu(self.team.backpack)  # 傳入 team.backpack 而非 team
+                        DisplaySystem.backpack_menu(self.team.backpack)
+                        # 修正：背包後回到選單而不是直接 break
                         continue
                     elif action == "8. Skip Turn":
-                        DisplaySystem.show_message(f"{member.name} skipped their turn.")
+                        DisplaySystem.show_message(
+                            f"{member.name} skipped their turn.",
+                            background=battle,
+                            extra_draw=None
+                        )
                         break
                     else:
-                        DisplaySystem.show_message("Invalid choice. Please select a valid option.")
-
+                        DisplaySystem.show_message(
+                            "Invalid choice. Please select a valid option.",
+                            background=battle,
+                            extra_draw=None
+                        )
+                        # 修正：錯誤選項後回到選單
+                        continue
                 if self.monster.hp <= 0:
                     # 先清除畫面
                     DisplaySystem.clear_screen()
-                    # 持續顯示勝利畫面直到玩家操作
                     waiting = True
                     while waiting:
+                        screen.blit(battle, (0, 0))
                         screen.blit(vectory, (0, 0))
-                        pygame.display.flip()
-                        # 可選：顯示獎勵訊息
+                        # 不再顯示 cat1, boss
                         font = pygame.font.Font(None, 48)
-
+                        text_surface = font.render("Victory! The monster has been defeated.", True, GREEN)
+                        screen.blit(text_surface, (100, 100))
+                        reward_surface = font.render("Rewards: 1000 EXP, 100 Coins", True, BLUE)
+                        screen.blit(reward_surface, (100, 180))
+                        pygame.display.flip()
                         for event in pygame.event.get():
                             if event.type == pygame.QUIT:
                                 pygame.quit()
@@ -412,20 +411,42 @@ class Battle:
                                 waiting = False
                     exp_reward = 1000
                     coin_reward = 100
-                    text_surface = font.render("Victory! The monster has been defeated.", True, GREEN)
-                    screen.blit(text_surface, (100, 100))
-                    reward_surface = font.render("Rewards: 1000 EXP, 100 Coins", True, BLUE)
-                    screen.blit(reward_surface, (100, 180))
-                    pygame.display.flip()
                     self.team.add_exp(exp_reward)
                     self.team.add_coin(coin_reward)
                     return
 
             # 怪物回合
-            DisplaySystem.show_message("Monster's turn!")
+            DisplaySystem.show_message(
+                "Monster's turn!",
+                background=battle,
+                extra_draw=None
+            )
+            # 修正：呼叫 show_attack_message 取代不存在的 show_monster_attack_message
+            def show_monster_attack_message_with_bg(monster, target, damage, crit=False, element_boost=False, background_override=None, extra_draw_override=None):
+                DisplaySystem.show_attack_message(
+                    monster, target, damage, crit=crit, element_boost=element_boost,
+                    background=battle,
+                    extra_draw=None
+                )
+            # 將 act 內部的 show_monster_attack_message 替換為 show_monster_attack_message_with_bg
+            original_show_attack_message = DisplaySystem.show_attack_message
+            DisplaySystem.show_attack_message = show_monster_attack_message_with_bg
             self.monster.act(self.team)
+            DisplaySystem.show_attack_message = original_show_attack_message
 
             if all(not m.is_alive() for m in self.team.members):
-                DisplaySystem.show_message("Game Over! The team has been defeated.")
+                waiting = True
+                while waiting:
+                    screen.blit(battle, (0, 0))
+                    font = pygame.font.Font(None, 48)
+                    text_surface = font.render("Game Over! The team has been defeated.", True, RED)
+                    screen.blit(text_surface, (100, 100))
+                    pygame.display.flip()
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit()
+                            exit()
+                        elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                            waiting = False
                 return
 
