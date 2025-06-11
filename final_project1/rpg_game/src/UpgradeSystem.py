@@ -1,7 +1,14 @@
 from rpg_game.src.equipment import Equipment  # 確保匯入 Equipment 類型
 from rpg_game.src.character import Character  # 確保匯入 Character 類型
 from rpg_game.src.backpack import Backpack  # 確保匯入 Backpack 類型
+import pygame  # 確保匯入 pygame
+import os
 # 從這裡移除 DisplaySystem 的匯入
+
+screen = pygame.display.set_mode((1200, 700))
+WHITE = (255, 255, 255)  # 定義白色
+image_upgrade = pygame.image.load("upgrade.jpg")  # 升級系統畫面
+upgrade_bg = pygame.transform.scale(image_upgrade, (800, 550))
 
 class UpgradeSystem:
     # 自訂每個等級升級所需的經驗值
@@ -25,6 +32,7 @@ class UpgradeSystem:
         # 檢查總經驗值是否足夠升級
         if team.total_exp < character.exp_to_next_level:
             DisplaySystem.show_message(f"隊伍的總經驗值不足，無法升級！需要 {character.exp_to_next_level - team.total_exp} 額外經驗值。")
+            pygame.time.delay(1000)  # 等待1秒以顯示訊息
             return
 
         # 升級角色等級並提升六屬性
@@ -46,14 +54,20 @@ class UpgradeSystem:
         character.dex += 1
         character.intel += 1
 
+        screen.fill(WHITE)
+        screen.blit(upgrade_bg, (375, 90))
         DisplaySystem.show_message(f"{character.name} 升級到等級 {character.level}！六屬性提升：STR+1, VIT+1, AGL+1, DEX+1, INT+1")
+        pygame.time.delay(1000)
 
     @staticmethod
     def upgrade_attribute(team, character, attribute, cost=50):
         from rpg_game.src.display import DisplaySystem, GREEN  # 動態匯入並定義顏色
         # 檢查總經驗值是否足夠提升屬性
+        screen.fill(WHITE)
+        screen.blit(upgrade_bg, (375, 90))
         if team.total_exp < cost:
             DisplaySystem.show_message(f"隊伍的總經驗值不足，無法提升屬性！需要 {cost - team.total_exp} 額外經驗值。")
+            pygame.time.delay(1000)
             return
 
         # 提升屬性
@@ -64,14 +78,20 @@ class UpgradeSystem:
     @staticmethod
     def upgrade_equipment(team, equipment, cost=100):
         from rpg_game.src.display import DisplaySystem
+        screen.fill(WHITE)
+        screen.blit(upgrade_bg, (375, 90))
         if team.total_exp < cost:
             DisplaySystem.show_message(f"隊伍的總經驗值不足，無法升級裝備！需要 {cost - team.total_exp} 額外經驗值。")
+            pygame.time.delay(1000)
             return
         if hasattr(equipment, "level"):
             team.total_exp -= cost
             equipment.level += 1
             DisplaySystem.show_message(f"{equipment.name} 升級到等級 {equipment.level}！")
+            pygame.time.delay(1000)
         else:
             DisplaySystem.show_message("無法升級此裝備。")
+            pygame.time.delay(1000)
+            
 
 

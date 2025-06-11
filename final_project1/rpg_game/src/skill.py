@@ -50,70 +50,43 @@ class ElementalSkill(Skill):
         super().__init__(name, cost, damage, desc)
         self.element = element
 
-    def use(self, user, target, background=None, extra_draw=None):
-        from rpg_game.src.display import DisplaySystem
-        import pygame
-        if user.mp < self.cost:
-            DisplaySystem.show_message(
-                f"{user.name} does not have enough MP to use {self.name}.",
-                background=background,
-                extra_draw=extra_draw
-            )
-            return False
-        user.mp -= self.cost
+def use(self, user, target, background=None, extra_draw=None):
+    from rpg_game.src.display import DisplaySystem
+    import pygame
 
-        if not hasattr(target, "team") or getattr(target, "team", None) is None:
-            total_damage = self.damage
-            skill_elem = self.element
-            target_elem = getattr(target, "element", None)
-            adv_msg = None
-            if skill_elem in ELEMENTS and target_elem in ELEMENTS:
-                if ELEMENT_ADVANTAGE.get((skill_elem, target_elem), False):
-                    total_damage *= 2
-                    adv_msg = "Elemental advantage! Damage doubled!"
-            target.hp -= total_damage
-            # 先顯示多行訊息
-            DisplaySystem.clear_screen(background, extra_draw)
-            font = pygame.font.Font(None, 32)
-            lines = []
-            if adv_msg:
-                lines.append(adv_msg)
-            lines.extend([
-                f"{user.name} used {self.name} on {getattr(target, 'name', 'Monster')}!",
-                f"Dealt {total_damage} damage.",
-                f"MP remaining: {user.mp}/{user.max_mp}"
-            ])
-            screen = pygame.display.get_surface()
-            for i, line in enumerate(lines):
-                text_surface = font.render(line, True, (0, 0, 0))
-                text_rect = text_surface.get_rect(center=(400, 220 + i * 40))
-                screen.blit(text_surface, text_rect)
-            pygame.display.flip()
-            # 播放音效
-            try:
-                pygame.mixer.init()
-                pygame.mixer.music.load("open.mp3")
-                pygame.mixer.music.play()
-                pygame.time.wait(4000)
-            except Exception:
-                pass
-            try:
-                pygame.mixer.music.load("hurt.mp3")
-                pygame.mixer.music.play()
-                pygame.time.wait(1000)
-                pygame.mixer.music.stop()
-            except Exception:
-                pass
-            pygame.time.wait(1200)
-            # 自動切畫面（不等待玩家操作）
-            return True
-        else:
-            DisplaySystem.show_message(
-                f"{self.name} can only be used to attack monsters!",
-                background=background,
-                extra_draw=extra_draw
-            )
-        return True
+    if user.mp < self.cost:
+        DisplaySystem.show_message(
+            f"{user.name} does not have enough MP to use {self.name}.",
+            background=background,
+            extra_draw=extra_draw
+        )
+        return False, 0, False, False
+
+    user.mp -= self.cost
+
+    if not hasattr(target, "team") or getattr(target, "team", None) is None:
+        total_damage = self.damage
+        crit = False
+        element_boost = False
+
+        skill_elem = self.element
+        target_elem = getattr(target, "element", None)
+
+        if skill_elem in ELEMENTS and target_elem in ELEMENTS:
+            if ELEMENT_ADVANTAGE.get((skill_elem, target_elem), False):
+                total_damage *= 2
+                element_boost = True
+
+        target.hp -= total_damage
+
+        return True, total_damage, crit, element_boost
+    else:
+        DisplaySystem.show_message(
+            f"{self.name} can only be used to attack monsters!",
+            background=background,
+            extra_draw=extra_draw
+        )
+        return False, 0, False, False
 
 class SupportElementalSkill(Skill):
     def __init__(self, name, cost, element, desc=""):

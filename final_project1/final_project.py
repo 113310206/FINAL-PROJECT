@@ -289,7 +289,19 @@ class Battle:
                                 background=battle,
                                 extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
                             )
+                            if success:
+                                DisplaySystem.show_elementSkill_use(
+                                    user=member,
+                                    skill=member.element_skill,
+                                    target=self.monster,
+                                    damage=self.monster.hp - self.monster.hp,  # 假設技能使用後怪物血量歸零
+                                    crit=False,  # 假設不會有暴擊
+                                    element_boost=False,  # 假設不會有元素加成
+                                    background=battle,
+                                    extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
+                            )
                             pygame.time.wait(1200)  # 等待技能動畫結束
+                            pygame.display.flip()
                             # 使用元素技能後自動切畫面，不再等待玩家操作
                         break
                     elif action == "4. Use Element Skill on Teammate":
@@ -367,8 +379,7 @@ class Battle:
                         # 修正：升級系統後回到選單而不是直接 break
                         continue
                     elif action == "6. Equip/Unequip":
-                        # ...existing code...
-                        # 修正：裝備系統後回到選單而不是直接 break
+                        Equipment.equip(self.team, member)
                         continue
                     elif action == "7. View Backpack":
                         DisplaySystem.backpack_menu(self.team.backpack)

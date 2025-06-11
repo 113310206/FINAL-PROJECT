@@ -1,4 +1,7 @@
+import pygame
 RED = (255, 0, 0)  # 確保顏色定義存在
+image_b = pygame.image.load("battle.jpg")
+battle = pygame.transform.scale(image_b, (1200, 700))
 
 class Equipment:
     def __init__(self, name, eq_type, stat_bonus, level=1):
@@ -12,7 +15,8 @@ class Equipment:
         """裝備物品並保留物品在背包中"""
         from rpg_game.src.display import DisplaySystem  # 動態匯入
         if self.is_equipped:  # 檢查是否已被其他角色裝備
-            DisplaySystem.show_message(f"{self.name} is already equipped by another character.", color=RED)
+            DisplaySystem.show_message(f"{self.name} is already equipped by another character.",background= battle)
+            pygame.time.delay(1000)
             return
         for k, v in self.stat_bonus.items():
             if hasattr(character, k):
@@ -25,7 +29,7 @@ class Equipment:
             character.mp += self.stat_bonus.get("mp", 0) * self.level
         character.equipment[self.eq_type] = self  # 更新角色的裝備
         self.is_equipped = True  # 標記為已裝備
-        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!")
+        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!",background=battle)
 
     def unequip(self, character):
         from rpg_game.src.display import DisplaySystem  # 動態匯入
@@ -33,7 +37,7 @@ class Equipment:
             if hasattr(character, k):
                 setattr(character, k, getattr(character, k) - v * self.level)
         self.is_equipped = False  # 標記為未裝備
-        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!")
+        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!",background=battle)
 
     def is_equipped(self):
         """檢查裝備是否已被裝備"""
@@ -100,5 +104,6 @@ class ring(EquipmentType):
 
     def use_special_effect(self, character):
         character.attack_power += 3 * self.level
+        from rpg_game.src.display import DisplaySystem
         DisplaySystem.show_message(f"{character.name} gains extra mana from {self.name}!")
 
