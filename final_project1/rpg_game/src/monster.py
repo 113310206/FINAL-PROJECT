@@ -18,7 +18,7 @@ class Monster:
         return self.hp > 0
 
     def act(self, team):
-        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        from rpg_game.src.display import DisplaySystem, RED, GREEN, BLUE  # 動態匯入顏色
         if self.behavior == "berserk" and self.hp < 100:
             DisplaySystem.show_message(f"{self.name} enters a berserk state, increasing attack!", color=RED)
             self.attack *= 2

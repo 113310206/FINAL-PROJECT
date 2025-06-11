@@ -50,7 +50,7 @@ class UpgradeSystem:
 
     @staticmethod
     def upgrade_attribute(team, character, attribute, cost=50):
-        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        from rpg_game.src.display import DisplaySystem, GREEN  # 動態匯入並定義顏色
         # 檢查總經驗值是否足夠提升屬性
         if team.total_exp < cost:
             DisplaySystem.show_message(f"隊伍的總經驗值不足，無法提升屬性！需要 {cost - team.total_exp} 額外經驗值。")
@@ -63,7 +63,7 @@ class UpgradeSystem:
 
     @staticmethod
     def upgrade_equipment(team, equipment, cost=100):
-        from rpg_game.src.display import DisplaySystem  # 動態匯入
+        from rpg_game.src.display import DisplaySystem
         if team.total_exp < cost:
             DisplaySystem.show_message(f"隊伍的總經驗值不足，無法升級裝備！需要 {cost - team.total_exp} 額外經驗值。")
             return

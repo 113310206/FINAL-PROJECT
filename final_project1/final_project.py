@@ -18,10 +18,10 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 WHITE = (255, 255, 255)
 screen = pygame.display.set_mode((1200, 700))
-image_v = pygame.image.load("vectory.jpg")
-imafe_b = pygame.image.load("battle.jpg")
-image_c1 = pygame.image.load("cat1.jpg")
-image_boss = pygame.image.load("boss.jpg")
+image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
+imafe_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
+image_c1 = pygame.image.load("C:/CODing/PYTHON/final_project1/cat1.jpg")
+image_boss = pygame.image.load("C:/CODing/PYTHON/final_project1/boss.jpg")
 vectory = pygame.transform.scale(image_v, (1200, 700))
 battle = pygame.transform.scale(imafe_b, (1200, 700))
 cat1 = pygame.transform.scale(image_c1, (200, 200))  # 縮小貓咪圖片
@@ -207,8 +207,8 @@ class Battle:
             # battle.jpg 背景持續顯示
             screen.blit(battle, (0, 0))
             # 貓咪與boss往左上移一點
-            cat_x, cat_y = 600, 400
-            boss_x, boss_y = cat_x + 300, cat_y - 200
+            cat_x, cat_y = 450, 400
+            boss_x, boss_y = cat_x + 400, cat_y - 100
             screen.blit(cat1, (cat_x, cat_y))
             screen.blit(boss, (boss_x, boss_y))
             pygame.display.flip()

@@ -13,12 +13,14 @@ BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
 
 screen = pygame.display.set_mode((1200, 700))
-image = pygame.image.load("background.jpg")
-image_s = pygame.image.load("store.jpg")
-image_v = pygame.image.load("vectory.jpg")
+image = pygame.image.load("C:/CODing\PYTHON/final_project1/background.jpg")
+image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
+image_v = pygame.image.load("C:/CODing/PYTHON/final_project1/vectory.jpg")
+image_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
 background = pygame.transform.scale(image, (1200, 700))
 store = pygame.transform.scale(image_s, (1200, 700))
 vectory = pygame.transform.scale(image_v, (1200, 700))
+battle = pygame.transform.scale(image_b, (1200, 700))
 
 class DisplaySystem:
     @staticmethod
@@ -105,7 +107,7 @@ class DisplaySystem:
         if element_boost:
             message += " [Element Advantage!]"
         if skill_boost:
-            message += " [Skill Boost!]"
+            message += " [Skill Boost!]"      
         DisplaySystem.show_message(message)
 
     @staticmethod

@@ -9,9 +9,9 @@ from final_project import Battle
 
 pygame.font.init()
 screen =pygame.display.set_mode((1200, 700))
-image = pygame.image.load("background.jpg")
-image_s = pygame.image.load("store.jpg")
-image_b = pygame.image.load("battle.jpg")
+image = pygame.image.load("C:/CODing/PYTHON/final_project1/background.jpg")
+image_s = pygame.image.load("C:/CODing/PYTHON/final_project1/store.jpg")
+image_b = pygame.image.load("C:/CODing/PYTHON/final_project1/battle.jpg")
 background = pygame.transform.scale(image, (1200, 700))
 store = pygame.transform.scale(image_s, (1200, 700))
 battle = pygame.transform.scale(image_b, (1200, 700))
