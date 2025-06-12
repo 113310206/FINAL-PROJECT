@@ -1,3 +1,7 @@
+import pygame
+image_s = pygame.image.load("store.jpg")
+store = pygame.transform.scale(image_s, (1200, 700))
+
 class Backpack:
     def __init__(self, team):
         """初始化背包並綁定隊伍"""
@@ -16,6 +20,7 @@ class Backpack:
             else:
                 self.items[item_name] = {'item': item, 'quantity': quantity}
             DisplaySystem.show_message(f"Added {quantity}x {item_name} to the backpack.")
+            pygame.time.wait(1200)  # 等待1秒
         elif isinstance(item, (Equipment, Character)):  # 支援角色屬性存入
             if isinstance(item, Equipment):
                 # 檢查是否已裝備該物品
@@ -25,7 +30,7 @@ class Backpack:
                 self.items[item.name]['quantity'] += quantity  # 更新物品數量
             else:
                 self.items[item.name] = {'item': item, 'quantity': quantity}  # 存入物品實例和數量
-            DisplaySystem.show_message(f"Added {quantity}x {item.name} to the backpack.")
+            DisplaySystem.show_message(f"Added {quantity}x {item.name} to the backpack.", background=store)
         elif isinstance(item, str):  # 支援直接存入屬性名稱
             if item in self.items:
                 self.items[item]['quantity'] += quantity

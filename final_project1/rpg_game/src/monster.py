@@ -1,3 +1,4 @@
+import pygame
 FIRE = 1
 WATER = 2
 WOOD = 3
@@ -39,6 +40,7 @@ class Monster:
                 background=battle,
                 extra_draw=extra_draw
             )
+            pygame.time.wait(1200)  # 等待1秒
             self.attack *= 2
             self.behavior = "normal"
         elif self.behavior == "heal" and self.hp < 100:
@@ -47,6 +49,7 @@ class Monster:
                 background=battle,
                 extra_draw=extra_draw
             )
+            pygame.time.wait(1200)
             self.hp += 50
 
         if self.skills and self.is_alive():
@@ -56,6 +59,7 @@ class Monster:
                 background=battle,
                 extra_draw=extra_draw
             )
+            pygame.time.wait(1200)
             for member in team.members:
                 if member.is_alive():
                     member.hp -= skill.damage
@@ -64,7 +68,8 @@ class Monster:
                         background=battle,
                         extra_draw=extra_draw
                     )
-
+                    pygame.time.wait(1200)
     def print_status(self):
         from rpg_game.src.display import DisplaySystem  # 動態匯入
         DisplaySystem.show_message(f"{self.name} - HP: {self.hp}, Attack: {self.attack}, Behavior: {self.behavior}, Element: {self.element or 'None'}")
+        pygame.time.wait(1200)  # 等待1秒

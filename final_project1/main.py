@@ -77,6 +77,7 @@ while game_running:
         DisplaySystem.upgrade_menu(team)
     elif action == "7. Exit Game":
         DisplaySystem.show_message("Exiting game. Goodbye!", color=RED)
+        pygame.time.wait(1000)
         pygame.quit()
         break
     else:

@@ -201,29 +201,33 @@ class DisplaySystem:
 
     @staticmethod
     def show_elementSkill_use(user, skill, target, damage, crit=False, element_boost=False, background=None, extra_draw=None):
-        import pygame
+        import pygame  # 修正 UnboundLocalError
         if extra_draw is None:
-            extra_draw = lambda: None  # 空函式保底
-
-        DisplaySystem.clear_screen(background, extra_draw)
-
-        # 組合訊息
-        lines = [f"{user.name} used {skill.name}! {skill.desc}"]
-        if element_boost:
-            lines.append("[Element Boost!] Damage doubled!")
-        lines.append(f"Dealt {damage} damage to {target.name}!")
+            def extra_draw():
+                try:
+                    import sys
+                    main_mod = sys.modules.get("__main__")
+                    if main_mod and hasattr(main_mod, "cat1") and hasattr(main_mod, "boss") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat1, (450, 400))
+                        main_mod.screen.blit(main_mod.boss, (850, 300))
+                    if main_mod and hasattr(main_mod, "cat_open") and hasattr(main_mod, "boss1") and hasattr(main_mod, "screen"):
+                        main_mod.screen.blit(main_mod.cat_open, (450, 400))
+                        main_mod.screen.blit(main_mod.boss1, (850, 300))
+                except Exception:
+                    pass
+        # 統一顯示與音效邏輯
+        message = f"{user.name} used {skill.name}! {skill.desc}\nDealt {damage} damage to {target.name}!"
         if crit:
-            lines.append("[Critical Hit!]")
-        lines.append(f"MP remaining: {user.mp}/{user.max_mp}")
-
+            message += " [Critical Hit!]"
+        if element_boost:
+            message += " [Element Boost!]"
+        DisplaySystem.clear_screen(background, extra_draw)
         font = pygame.font.Font(None, 36)
-        screen = pygame.display.get_surface()
-        for i, line in enumerate(lines):
-            text_surface = font.render(line, True, (0, 0, 0))
-            text_rect = text_surface.get_rect(center=(400, 220 + i * 40))
-            screen.blit(text_surface, text_rect)
+        text_surface = font.render(message, True, BLACK)
+        text_rect = text_surface.get_rect(center=(400, 300))
+        screen.blit(text_surface, text_rect)
         pygame.display.flip()
-
+        # 自動播放 open.mp3
         try:
             pygame.mixer.init()
             pygame.mixer.music.load("open.mp3")
@@ -231,6 +235,7 @@ class DisplaySystem:
             pygame.time.wait(4000)
         except Exception:
             pass
+        # 自動播放 hurt.mp3
         try:
             pygame.mixer.music.load("hurt.mp3")
             pygame.mixer.music.play()
@@ -238,7 +243,6 @@ class DisplaySystem:
             pygame.mixer.music.stop()
         except Exception:
             pass
-        
 
     @staticmethod
     def show_main_menu():
@@ -278,7 +282,7 @@ class DisplaySystem:
 
     @staticmethod
     def show_team(team):
-        DisplaySystem.clear_screen()
+        DisplaySystem.clear_screen(team_bg)
         font = pygame.font.Font(None, 24)
         y_offset = 50
         for member in team.members:
@@ -316,6 +320,7 @@ class DisplaySystem:
         y_offset = 50
         if not backpack.items:
             DisplaySystem.show_message("The backpack is empty.", color=RED)
+            pygame.time.wait(2000)
             return
         for item_name, data in backpack.items.items():
             item = data['item']
@@ -399,6 +404,7 @@ class DisplaySystem:
                 DisplaySystem.show_team(team)
             elif action == "2. View Positions":
                 DisplaySystem.show_message("\n".join([f"{member.name}: {member.position}" for member in team.members]), background=team_bg)
+                pygame.time.wait(2000)  # 等待2秒
             elif action == "3. Change Position":
                 DisplaySystem.show_message("Enter member name and new position (front/mid/back).", background=team_bg)
                 # 顯示隊伍成員
@@ -642,9 +648,12 @@ class DisplaySystem:
                     item_data = backpack.items[selected_item]
                     item = item_data['item']
                     if isinstance(item, Character):
-                        DisplaySystem.show_message(f"Cannot use {selected_item} directly.", background=backpack_bg)
+                        DisplaySystem.show_message(f"Entering upgrade system for {selected_item}.", background=backpack_bg)
+                        pygame.time.wait(1000)
+                        DisplaySystem.upgrade_menu(backpack)
                     elif isinstance(item, Equipment):
                         DisplaySystem.show_message(f"Entering upgrade system for {selected_item}.", background=backpack_bg)
+                        pygame.time.wait(1000)
                         DisplaySystem.upgrade_menu(backpack)
                     else:
                         DisplaySystem.show_message(f"Using {selected_item}.", background=backpack_bg)

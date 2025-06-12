@@ -289,19 +289,7 @@ class Battle:
                                 background=battle,
                                 extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
                             )
-                            if success:
-                                DisplaySystem.show_elementSkill_use(
-                                    user=member,
-                                    skill=member.element_skill,
-                                    target=self.monster,
-                                    damage=self.monster.hp - self.monster.hp,  # 假設技能使用後怪物血量歸零
-                                    crit=False,  # 假設不會有暴擊
-                                    element_boost=False,  # 假設不會有元素加成
-                                    background=battle,
-                                    extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
-                            )
                             pygame.time.wait(1200)  # 等待技能動畫結束
-                            pygame.display.flip()
                             # 使用元素技能後自動切畫面，不再等待玩家操作
                         break
                     elif action == "4. Use Element Skill on Teammate":
@@ -312,6 +300,7 @@ class Battle:
                                 background=battle,
                                 extra_draw=lambda: (screen.blit(cat_open, (450, 400)), screen.blit(boss1, (850, 300)))
                             )
+                            pygame.time.wait(1200)  # 等待1.2秒以顯示訊息
                             # 等待玩家操作，避免訊息被蓋掉
                             waiting = True
                             while waiting:
@@ -379,7 +368,93 @@ class Battle:
                         # 修正：升級系統後回到選單而不是直接 break
                         continue
                     elif action == "6. Equip/Unequip":
-                        Equipment.equip(self.team, member)
+                        # 顯示裝備/卸下裝備選單
+                        while True:
+                            DisplaySystem.show_message("Select equipment to equip/unequip.", background=battle)
+                            from rpg_game.src.equipment import Equipment
+                            equipment_items = [
+                                (item_name, data['item'])
+                                for item_name, data in self.team.backpack.items.items()
+                                if isinstance(data['item'], Equipment)
+                            ]
+                            if not equipment_items:
+                                DisplaySystem.show_message("No equipment in backpack.", color=RED, background=battle)
+                                pygame.time.wait(1200)
+                                break
+                            font = pygame.font.Font(None, 24)
+                            buttons_eq = []
+                            for idx, (item_name, eq) in enumerate(equipment_items):
+                                eq_status = "Equipped" if eq.is_equipped else "Unequipped"
+                                text_surface = font.render(f"{idx + 1}. {item_name} (Lv.{eq.level}) [{eq_status}]", True, BLACK)
+                                text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 40))
+                                screen.blit(text_surface, text_rect)
+                                buttons_eq.append((text_rect, eq))
+                            # 新增「全部卸下」按鈕
+                            unequip_all_rect = pygame.Rect(50, 60 + len(buttons_eq) * 40, 200, 40)
+                            unequip_all_text = font.render("Unequip All", True, BLUE)
+                            screen.blit(unequip_all_text, unequip_all_rect.topleft)
+                            buttons_eq.append((unequip_all_rect, "Unequip All"))
+                            # 退出按鈕
+                            exit_rect = pygame.Rect(50, 100 + len(buttons_eq) * 40, 200, 40)
+                            exit_text = font.render("Exit", True, RED)
+                            screen.blit(exit_text, exit_rect.topleft)
+                            buttons_eq.append((exit_rect, "Exit"))
+                            pygame.display.flip()
+                            selected_eq = DisplaySystem.handle_click(buttons_eq)
+                            if selected_eq == "Exit":
+                                break
+                            if selected_eq == "Unequip All":
+                                # 選擇角色後全部卸下
+                                DisplaySystem.show_message("Select a character to unequip all.", background=battle)
+                                buttons_char = []
+                                for idx, m in enumerate(self.team.members):
+                                    text_surface = font.render(f"{idx + 1}. {m.name}", True, BLACK)
+                                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 40))
+                                    screen.blit(text_surface, text_rect)
+                                    buttons_char.append((text_rect, m))
+                                exit_rect2 = pygame.Rect(50, 50 + len(buttons_char) * 40, 200, 40)
+                                exit_text2 = font.render("Exit", True, RED)
+                                screen.blit(exit_text2, exit_rect2.topleft)
+                                buttons_char.append((exit_rect2, "Exit"))
+                                pygame.display.flip()
+                                selected_char = DisplaySystem.handle_click(buttons_char)
+                                if selected_char == "Exit":
+                                    continue
+                                if selected_char:
+                                    for eq_type, eq in selected_char.equipment.items():
+                                        if eq:
+                                            eq.unequip(selected_char)
+                                            selected_char.equipment[eq_type] = None
+                                continue
+                            if selected_eq:
+                                # 選擇要裝備到哪個角色
+                                DisplaySystem.show_message("Select a character to equip/unequip.", background=battle)
+                                buttons_char = []
+                                for idx, m in enumerate(self.team.members):
+                                    text_surface = font.render(f"{idx + 1}. {m.name}", True, BLACK)
+                                    text_rect = text_surface.get_rect(topleft=(50, 50 + idx * 40))
+                                    screen.blit(text_surface, text_rect)
+                                    buttons_char.append((text_rect, m))
+                                exit_rect2 = pygame.Rect(50, 50 + len(buttons_char) * 40, 200, 40)
+                                exit_text2 = font.render("Exit", True, RED)
+                                screen.blit(exit_text2, exit_rect2.topleft)
+                                buttons_char.append((exit_rect2, "Exit"))
+                                pygame.display.flip()
+                                selected_char = DisplaySystem.handle_click(buttons_char)
+                                if selected_char == "Exit":
+                                    continue
+                                if selected_char:
+                                    # 若已裝備則卸下，否則裝備
+                                    if selected_eq.is_equipped and selected_char.equipment.get(selected_eq.eq_type) == selected_eq:
+                                        selected_eq.unequip(selected_char)
+                                        selected_char.equipment[selected_eq.eq_type] = None
+                                    else:
+                                        # 若該角色該部位已有裝備，先卸下
+                                        old_eq = selected_char.equipment.get(selected_eq.eq_type)
+                                        if old_eq:
+                                            old_eq.unequip(selected_char)
+                                            selected_char.equipment[selected_eq.eq_type] = None
+                                        selected_eq.equip(selected_char)
                         continue
                     elif action == "7. View Backpack":
                         DisplaySystem.backpack_menu(self.team.backpack)
@@ -391,6 +466,7 @@ class Battle:
                             background=battle,
                             extra_draw=None
                         )
+                        pygame.time.wait(1200)  # 等待1.2秒以顯示訊息
                         break
                     else:
                         DisplaySystem.show_message(
@@ -398,6 +474,7 @@ class Battle:
                             background=battle,
                             extra_draw=None
                         )
+                        pygame.time.wait(1200)  # 等待1.2秒以顯示訊息
                         # 修正：錯誤選項後回到選單
                         continue
                 if self.monster.hp <= 0:
@@ -432,6 +509,7 @@ class Battle:
                 background=battle,
                 extra_draw=None
             )
+            pygame.time.wait(1200)  # 等待1.2秒以顯示訊息
             # 修正：呼叫 show_attack_message 取代不存在的 show_monster_attack_message
             def show_monster_attack_message_with_bg(monster, target, damage, crit=False, element_boost=False, background_override=None, extra_draw_override=None):
                 DisplaySystem.show_attack_message(

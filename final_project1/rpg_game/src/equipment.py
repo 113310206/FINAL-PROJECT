@@ -15,8 +15,8 @@ class Equipment:
         """裝備物品並保留物品在背包中"""
         from rpg_game.src.display import DisplaySystem  # 動態匯入
         if self.is_equipped:  # 檢查是否已被其他角色裝備
-            DisplaySystem.show_message(f"{self.name} is already equipped by another character.",background= battle)
-            pygame.time.delay(1000)
+            DisplaySystem.show_message(f"{self.name} is already equipped by another character.", color=RED, background=battle)
+            pygame.time.wait(1200)  # 等待1秒
             return
         for k, v in self.stat_bonus.items():
             if hasattr(character, k):
@@ -29,7 +29,8 @@ class Equipment:
             character.mp += self.stat_bonus.get("mp", 0) * self.level
         character.equipment[self.eq_type] = self  # 更新角色的裝備
         self.is_equipped = True  # 標記為已裝備
-        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!",background=battle)
+        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!", background=battle)
+        pygame.time.wait(1200)  # 等待1秒
 
     def unequip(self, character):
         from rpg_game.src.display import DisplaySystem  # 動態匯入
@@ -37,7 +38,8 @@ class Equipment:
             if hasattr(character, k):
                 setattr(character, k, getattr(character, k) - v * self.level)
         self.is_equipped = False  # 標記為未裝備
-        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!",background=battle)
+        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!", background=battle)
+        pygame.time.wait(1200)  # 等待1秒
 
     def is_equipped(self):
         """檢查裝備是否已被裝備"""
@@ -74,6 +76,7 @@ class thors_hammer(EquipmentType):
         if random.random() < 0.3:  # 30% chance to stun
             from rpg_game.src.display import DisplaySystem
             DisplaySystem.show_message(f"{self.name} stuns {target.name}!")
+            pygame.time.wait(1200)
             target.is_stunned = True  # Assuming target has an is_stunned attribute
 
 class shild(EquipmentType):
@@ -85,6 +88,7 @@ class shild(EquipmentType):
         reduced_damage = damage * 0.7  # Example of special effect
         from rpg_game.src.display import DisplaySystem
         DisplaySystem.show_message(f"{self.name} reduces damage taken to {reduced_damage}!")
+        pygame.time.wait(1200)
         return reduced_damage
     
 class book(EquipmentType):
@@ -96,6 +100,7 @@ class book(EquipmentType):
         character.mp += 5 * self.level  # Example of special effect
         from rpg_game.src.display import DisplaySystem
         DisplaySystem.show_message(f"{character.name} gains extra mana from {self.name}!")
+        pygame.time.wait(1200)
 
 class ring(EquipmentType):
     def __init__(self, level=1):
@@ -106,4 +111,5 @@ class ring(EquipmentType):
         character.attack_power += 3 * self.level
         from rpg_game.src.display import DisplaySystem
         DisplaySystem.show_message(f"{character.name} gains extra mana from {self.name}!")
+        pygame.time.wait(1200)
 
