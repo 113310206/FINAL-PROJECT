@@ -10,7 +10,7 @@ from final_project import Battle
 pygame.font.init()
 screen = pygame.display.set_mode((1200, 700))
 image_link = pygame.image.load("link.jpg")  # 進入畫面
-image = pygame.image.load("background.jpg")     # 主畫面
+image = pygame.image.load("background1.jpg")     # 主畫面
 image_s = pygame.image.load("store.jpg")
 image_b = pygame.image.load("battle.jpg")
 background = pygame.transform.scale(image, (1200, 700))

@@ -14,13 +14,15 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 BLUE = (0, 0, 255)
 GREEN = (0, 255, 0)
+GRAY = (169, 169, 169)
+PINK = (255, 192, 203)
 
 screen = pygame.display.set_mode((1200, 700))
 image_link = pygame.image.load("link.jpg")  # 進入畫面
 image_s = pygame.image.load("store.jpg")
 image_v = pygame.image.load("vectory.jpg")
 image_b = pygame.image.load("battle.jpg")
-image_bg = pygame.image.load("background.jpg")  # 主畫面背景
+image_bg = pygame.image.load("background1.jpg")  # 主畫面背景
 image_backpack = pygame.image.load("backpack.jpg")  # 背包畫面
 image_team = pygame.image.load("team.jpg")  # Team Management 畫面
 image_upgrade = pygame.image.load("upgrade.jpg")  # 升級系統畫面
@@ -71,7 +73,7 @@ class DisplaySystem:
             f"Equipment: {', '.join([f'{eq.name} (Lv.{eq.level})' for eq in character.equipment.values() if eq]) or 'None'}"
         ]
         for i, line in enumerate(info_lines):
-            text_surface = font.render(line, True, BLACK)
+            text_surface = font.render(line, True, WHITE)
             screen.blit(text_surface, (50, 50 + i * 30))
         pygame.display.flip()
         pygame.time.wait(2000)
@@ -261,7 +263,7 @@ class DisplaySystem:
         buttons = []
         for i, option in enumerate(options):
             text_surface = font.render(option, True, WHITE)
-            text_rect = text_surface.get_rect(topleft=(50, 50 + i * 40))
+            text_rect = text_surface.get_rect(topleft=(700, 150 + i * 60))  # 0 是最左邊
             screen.blit(text_surface, text_rect)
             buttons.append((text_rect, option))
         pygame.display.flip()
@@ -283,19 +285,29 @@ class DisplaySystem:
     @staticmethod
     def show_team(team):
         DisplaySystem.clear_screen(team_bg)
-        font = pygame.font.Font(None, 24)
+        font = pygame.font.Font(None, 40)
         y_offset = 50
         for member in team.members:
             job_name = getattr(member, "job", None)
             job_name = job_name.job_name if job_name and hasattr(job_name, "job_name") else "無職業"
-            info = f"{member.name} | {job_name} | Lv{member.level} | ATK:{member.attack_power} | HP:{member.hp}/{member.max_hp} | MP:{member.mp}/{member.max_mp} | Armor:{member.armor}/{member.max_armor} | Elem:{member.element or 'None'} | Pos:{member.position}"
-            text_surface = font.render(info, True, BLACK)
+            info = (
+                f"{member.name} | {job_name} | Lv{member.level}\n"
+                f"ATK:{member.attack_power} | HP:{member.hp}/{member.max_hp} | MP:{member.mp}/{member.max_mp} | Armor:{member.armor}/{member.max_armor}\n"
+                f"Elem:{member.element or 'None'} | Pos:{member.position}"
+            )
+            # 多行顯示
+            for line in info.split('\n'):
+                text_surface = font.render(line, True, WHITE)
+                screen.blit(text_surface, (50, y_offset))
+                y_offset += 30
+            continue  # 跳過原本的單行顯示
+            text_surface = font.render(info, True, WHITE)
             screen.blit(text_surface, (50, y_offset))
             y_offset += 50
 
         # 新增退出按鈕
         exit_button = pygame.Rect(50, y_offset + 50, 200, 50)
-        text_surface = font.render("Exit", True, BLACK)
+        text_surface = font.render("Exit", True, WHITE)
         screen.blit(text_surface, exit_button.topleft)
         pygame.display.flip()
 
@@ -340,7 +352,7 @@ class DisplaySystem:
 
         # 顯示隊伍狀態
         team_y_offset = 50
-        text_surface = font.render("=== Team Status ===", True, BLACK)
+        text_surface = font.render("=== Team Status ===", True, WHITE)
         screen.blit(text_surface, (50, team_y_offset))
         team_y_offset += 30
         for member in team.members:
@@ -348,7 +360,7 @@ class DisplaySystem:
             job_name = job_name.job_name if job_name and hasattr(job_name, "job_name") else "無職業"
             eqs = [f"{eq.name} (Lv.{eq.level})" for eq in member.equipment.values() if eq]  # 新增裝備資訊
             info = f"{member.name} | {job_name} | Lv{member.level} | ATK:{member.attack_power} | HP:{member.hp}/{member.max_hp} | MP:{member.mp}/{member.max_mp} | Armor:{member.armor}/{member.max_armor} | Elem:{member.element or 'None'} | Pos:{member.position} | Eq:{', '.join(eqs) if eqs else 'None'}"
-            text_surface = font.render(info, True, BLACK)
+            text_surface = font.render(info, True, WHITE)
             screen.blit(text_surface, (50, team_y_offset))
             team_y_offset += 30
 
@@ -363,20 +375,7 @@ class DisplaySystem:
 
         pygame.display.flip()
     
-    @staticmethod
-    def show_store_menu(team):
-        DisplaySystem.clear_screen()
-        print("=== Store ===")
-        print("1. Increase STR (50 coins)")
-        print("2. Increase VIT (50 coins)")
-        print("3. Increase AGL (50 coins)")
-        print("4. Increase DEX (50 coins)")
-        print("5. Increase INT (50 coins)")
-        print("6. Exit Store")
-        print("7. Gacha Draw (200 coins)")
-        print(f"Current Coins: {team.coin}")
-        print("================")
-    
+
     @staticmethod
     def show_team_menu(team):
         from rpg_game.src.character import Character  # 確保匯入 Character 類型
@@ -393,8 +392,8 @@ class DisplaySystem:
             ]
             buttons = []
             for i, option in enumerate(options):
-                text_surface = font.render(option, True, BLACK)
-                text_rect = text_surface.get_rect(topleft=(50, 50 + i * 50))
+                text_surface = font.render(option, True, WHITE)
+                text_rect = text_surface.get_rect(topleft=(50, 150 + i * 60))  # 50 是左邊距，150 是起始高度
                 screen.blit(text_surface, text_rect)
                 buttons.append((text_rect, option))
             pygame.display.flip()
@@ -478,6 +477,13 @@ class DisplaySystem:
         font = pygame.font.Font(None, 36)
         while True:
             DisplaySystem.clear_screen(store)
+            # --- 新增：繪製透明白色面板 ---
+            panel_width, panel_height = 360, 400
+            panel_x, panel_y = 30, 30
+            panel_surface = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+            panel_surface.fill((255, 255, 255, 180))  # 180為透明度(0~255)
+            screen.blit(panel_surface, (panel_x, panel_y))
+            # --- 新增結束 ---
             options = [
                 "1. Increase STR (50 coins)",
                 "2. Increase VIT (50 coins)",
@@ -495,7 +501,7 @@ class DisplaySystem:
                 buttons.append((text_rect, option))
             # 顯示目前金幣
             coin_surface = font.render(f"Current Coins: {team.coin}", True, BLUE)
-            screen.blit(coin_surface, (800, 50))
+            screen.blit(coin_surface, (50, 400))
             pygame.display.flip()
 
             action = DisplaySystem.handle_click(buttons)
