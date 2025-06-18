@@ -14,8 +14,8 @@ class Monster:
         self.element = element
         self.skills = skills or []
         self.behavior = behavior or "normal"
-        self.name = f"怪物 (Round {round_number})"
-        self.job = type("Job", (), {"job_name": "怪物"})()  # 讓 monster 有 job 屬性且 job_name 為"怪物"
+        self.name = f"Monster (Round {round_number})"
+        self.job = type("Job", (), {"job_name": "Monster"})()  # 讓 monster 有 job 屬性且 job_name 為"怪物"
 
     def is_alive(self):
         return self.hp > 0

@@ -12,34 +12,190 @@ class Equipment:
         self.is_equipped = False  # 新增屬性，追蹤是否已被裝備
 
     def equip(self, character):
-        """裝備物品並保留物品在背包中"""
-        from rpg_game.src.display import DisplaySystem  # 動態匯入
-        if self.is_equipped:  # 檢查是否已被其他角色裝備
-            DisplaySystem.show_message(f"{self.name} is already equipped by another character.", color=RED, background=battle)
-            pygame.time.wait(1200)  # 等待1秒
-            return
-        for k, v in self.stat_bonus.items():
-            if hasattr(character, k):
-                setattr(character, k, getattr(character, k) + v * self.level)
-        if self.eq_type == "weapon":  # 添加武器攻擊加成    
+        """裝備物品"""
+        from rpg_game.src.display import DisplaySystem, RED, GREEN, WHITE, BLACK
+        screen = pygame.display.set_mode((1200, 700))
+        DisplaySystem.clear_screen(background=battle)
+        # 計算面板大小
+        font = pygame.font.Font(None, 28)
+        info = [
+            f"Equipment: {self.name} (Lv.{self.level})",
+            f"Type: {self.eq_type}",
+            "Stat Bonuses:"
+        ]
+        
+        # 計算文字高度
+        text_height = len(info) * 30  # 基本資訊高度
+        bonus_height = len(self.stat_bonus) * 25  # 屬性加成高度
+        button_height = 50  # 按鈕區域高度
+        padding = 40  # 上下邊距
+        
+        # 計算面板總高度
+        panel_height = text_height + bonus_height + button_height + padding
+        panel_width = 350  # 固定寬度
+        
+        # 創建確認面板
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((255, 255, 255, 200))
+        screen.blit(panel, (50, 50))
+
+        # 顯示裝備資訊
+        y = 70
+        for text in info:
+            screen.blit(font.render(text, True, BLACK), (70, y))
+            y += 30
+
+        # 顯示屬性加成
+        y += 10
+        for stat, value in self.stat_bonus.items():
+            screen.blit(font.render(f"+{value * self.level} {stat}", True, GREEN), (90, y))
+            y += 25
+
+        # 確認和取消按鈕
+        button_y = y + 20
+        confirm_rect = pygame.Rect(70, button_y, 100, 30)
+        cancel_rect = pygame.Rect(180, button_y, 100, 30)
+        pygame.draw.rect(screen, GREEN, confirm_rect, border_radius=5)
+        pygame.draw.rect(screen, RED, cancel_rect, border_radius=5)
+        screen.blit(font.render("Confirm", True, WHITE), (85, button_y + 5))
+        screen.blit(font.render("Cancel", True, WHITE), (195, button_y + 5))
+        pygame.display.flip()
+
+        # 等待玩家選擇
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if confirm_rect.collidepoint(mouse_pos):
+                        self._apply_equipment_effects(character)
+                        character.equipment[self.eq_type] = self
+                        self.is_equipped = True
+                        DisplaySystem.show_message(f"{character.name} equipped {self.name}!", background=battle)
+                        pygame.time.wait(500)
+                        return True
+                    elif cancel_rect.collidepoint(mouse_pos):
+                        return False
+        return False
+
+    def _apply_equipment_effects(self, character):
+        """應用裝備效果"""
+        # 基本屬性加成
+        for stat, value in self.stat_bonus.items():
+            if hasattr(character, stat):
+                current_value = getattr(character, stat)
+                setattr(character, stat, current_value + value * self.level)
+        
+        # 特殊裝備效果
+        if self.eq_type == "weapon":
             character.attack_power += self.stat_bonus.get("atk", 0) * self.level
-        elif self.eq_type == "armor":  # 添加防禦加成
+            character.attack_power += self.stat_bonus.get("str", 0) * self.level  # 力量影響攻擊力
+        elif self.eq_type == "armor":
             character.armor += self.stat_bonus.get("def", 0) * self.level
-        elif self.eq_type == "accessory":  # 添加魔力加成
+            character.armor += self.stat_bonus.get("vit", 0) * self.level  # 體力影響防禦
+        elif self.eq_type == "accessory":
             character.mp += self.stat_bonus.get("mp", 0) * self.level
-        character.equipment[self.eq_type] = self  # 更新角色的裝備
-        self.is_equipped = True  # 標記為已裝備
-        DisplaySystem.show_message(f"{character.name} equipped {self.name} (Lv.{self.level})!", background=battle)
-        pygame.time.wait(1200)  # 等待1秒
+            character.mp += self.stat_bonus.get("intel", 0) * self.level  # 智力影響魔法值
+
+        # 應用 BonusSystem 的加成效果
+        from final_project import BonusSystem
+        BonusSystem.apply_equipment_bonus(character, self)
+        BonusSystem.apply_weapon_bonus(character, self)
+        BonusSystem.apply_position_bonus(character)
 
     def unequip(self, character):
-        from rpg_game.src.display import DisplaySystem  # 動態匯入
-        for k, v in self.stat_bonus.items():
-            if hasattr(character, k):
-                setattr(character, k, getattr(character, k) - v * self.level)
-        self.is_equipped = False  # 標記為未裝備
-        DisplaySystem.show_message(f"{character.name} unequipped {self.name} (Lv.{self.level})!", background=battle)
-        pygame.time.wait(1200)  # 等待1秒
+        """卸下裝備"""
+        from rpg_game.src.display import DisplaySystem, RED, GREEN, WHITE, BLACK, BLUE
+        screen = pygame.display.set_mode((1200, 700))
+        DisplaySystem.clear_screen(background=battle)
+        # 計算面板大小
+        font = pygame.font.Font(None, 28)
+        info = [
+            f"Unequip: {self.name} (Lv.{self.level})",
+            f"Type: {self.eq_type}",
+            "Removing Stats:"
+        ]
+        
+        # 計算文字高度
+        text_height = len(info) * 30  # 基本資訊高度
+        bonus_height = len(self.stat_bonus) * 25  # 屬性加成高度
+        button_height = 50  # 按鈕區域高度
+        padding = 40  # 上下邊距
+        
+        # 計算面板總高度
+        panel_height = text_height + bonus_height + button_height + padding
+        panel_width = 350  # 固定寬度
+        
+        # 創建確認面板
+        panel = pygame.Surface((panel_width, panel_height), pygame.SRCALPHA)
+        panel.fill((255, 255, 255, 200))
+        screen.blit(panel, (50, 50))
+
+        # 顯示卸下資訊
+        y = 70
+        for text in info:
+            screen.blit(font.render(text, True, BLACK), (70, y))
+            y += 30
+
+        # 顯示將要移除的屬性
+        y += 10
+        for stat, value in self.stat_bonus.items():
+            screen.blit(font.render(f"-{value * self.level} {stat}", True, RED), (90, y))
+            y += 25
+
+        # 確認和取消按鈕
+        button_y = y + 20
+        confirm_rect = pygame.Rect(70, button_y, 100, 30)
+        cancel_rect = pygame.Rect(180, button_y, 100, 30)
+        pygame.draw.rect(screen, RED, confirm_rect, border_radius=5)
+        pygame.draw.rect(screen, BLUE, cancel_rect, border_radius=5)
+        screen.blit(font.render("Confirm", True, WHITE), (85, button_y + 5))
+        screen.blit(font.render("Cancel", True, WHITE), (195, button_y + 5))
+        pygame.display.flip()
+
+        # 等待玩家選擇
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    if confirm_rect.collidepoint(mouse_pos):
+                        self._remove_equipment_effects(character)
+                        self.is_equipped = False
+                        DisplaySystem.show_message(f"{character.name} unequipped {self.name}!", background=battle)
+                        pygame.time.wait(500)
+                        return True
+                    elif cancel_rect.collidepoint(mouse_pos):
+                        return False
+
+    def _remove_equipment_effects(self, character):
+        """移除裝備效果"""
+        # 移除基本屬性加成
+        for stat, value in self.stat_bonus.items():
+            if hasattr(character, stat):
+                current_value = getattr(character, stat)
+                setattr(character, stat, current_value - value * self.level)
+        
+        # 移除特殊裝備效果
+        if self.eq_type == "weapon":
+            character.attack_power -= self.stat_bonus.get("atk", 0) * self.level
+            character.attack_power -= self.stat_bonus.get("str", 0) * self.level
+        elif self.eq_type == "armor":
+            character.armor -= self.stat_bonus.get("def", 0) * self.level
+            character.armor -= self.stat_bonus.get("vit", 0) * self.level
+        elif self.eq_type == "accessory":
+            character.mp -= self.stat_bonus.get("mp", 0) * self.level
+            character.mp -= self.stat_bonus.get("intel", 0) * self.level
+
+        # 移除 BonusSystem 的加成效果
+        from final_project import BonusSystem
+        BonusSystem.apply_equipment_bonus(character, self, reverse=True)
+        BonusSystem.reset_equipment_bonus(character)
+        BonusSystem.reset_position_bonus(character)
 
     def is_equipped(self):
         """檢查裝備是否已被裝備"""

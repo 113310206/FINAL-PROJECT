@@ -110,15 +110,7 @@ class ElementalSkill(Skill):
             except Exception:
                 pass
             pygame.time.wait(1200)
-            # 自動切畫面（不等待玩家操作）
             return True
-        else:
-            DisplaySystem.show_message(
-                f"{self.name} can only be used to attack monsters!",
-                background=background,
-                extra_draw=extra_draw
-            )
-            pygame.time.wait(1200)
         return True
 
 class SupportElementalSkill(Skill):
@@ -163,7 +155,7 @@ class SupportElementalSkill(Skill):
             return True
         else:
             DisplaySystem.show_message(
-                f"{self.name} 只能對隊友使用！",
+                f"{self.name} can only be used on teammates!",
                 background=background,
                 extra_draw=extra_draw
             )

@@ -37,7 +37,7 @@ class Character:
         return self.hp > 0
 
     def print(self):
-        job_name = getattr(self.job, "job_name", None) or "無職業"
+        job_name = getattr(self.job, "job_name", None) or "No Job"
         print(f"{self.name} Lv {self.level} [{job_name}]")
         print(f"ATK: {self.attack_power} | HP: {self.hp}/{self.max_hp} | MP: {self.mp}/{self.max_mp} | Armor: {self.armor}/{self.max_armor}")
         print(f"Element: {self.element or 'None'} | EXP: {self.exp}/{self.exp_to_next_level}")
@@ -49,29 +49,6 @@ class Character:
             else:
                 print(f"  {eq_type.capitalize()}: 無")
         print("-" * 30)
-
-    def equip(self, equipment, backpack):
-        from rpg_game.src.display import DisplaySystem
-        if equipment.is_equipped:
-            DisplaySystem.show_message(f"{equipment.name} 已被其他角色裝備，無法再次裝備。")
-            return
-        else:
-            DisplaySystem.show_message(f"{self.name} 裝備了 {equipment.name} (Lv.{equipment.level})！", color=GREEN)
-        if self.equipment.get(equipment.eq_type):
-            self.unequip(equipment.eq_type, backpack)
-        self.equipment[equipment.eq_type] = equipment
-        equipment.equip(self)
-
-    def unequip(self, eq_type, backpack):
-        from rpg_game.src.display import DisplaySystem
-        eq = self.equipment.get(eq_type)
-        if eq:
-            eq.unequip(self)
-            self.equipment[eq_type] = None
-            print(f"{self.name} 卸下了 {eq.name} (Lv.{eq.level})！")
-        else:
-            # 修正：沒有裝備時不會當掉，顯示提示訊息
-            DisplaySystem.show_message(f"{self.name} 沒有裝備 {eq_type} 類型的物品，無法卸下。")
 
     def gain_exp(self, amount):
         self.exp += amount
@@ -143,7 +120,3 @@ class Character:
         else:
             self.hp -= damage
         return True  # 受傷
-
-
-
-
